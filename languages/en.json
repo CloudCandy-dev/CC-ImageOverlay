@@ -1,0 +1,37 @@
+{
+    "app_title": "画像オーバーレイ コントローラー",
+    "select_image_button": "画像を選択...",
+    "no_image_selected": "画像が選択されていません",
+    "enable_overlay_checkbox": "オーバーレイ表示",
+    "size_label": "サイズ: {value}%",
+    "alpha_label": "透明度: {value}%",
+    "pos_x_label": "X座標: {value}",
+    "pos_y_label": "Y座標: {value}",
+    "select_image_dialog_title": "画像ファイルを選択",
+    "image_files_filter": "画像ファイル (*.png *.jpg *.jpeg *.bmp *.gif)",
+    "error_loading_image_failed": "画像読込失敗: {image_path}",
+    "status_image_loaded": "画像読込: {filename}",
+
+    "menu_file": "ファイル(&F)",
+    "action_exit": "終了(&X)",
+
+    "menu_info": "情報(&I)",
+    "action_help": "ヘルプ(&H)",
+    "action_version": "バージョン情報(&V)",
+    "action_license": "ライセンス(&L)",
+
+    "menu_settings": "設定(&S)",
+    "action_language": "言語(&L)",
+    "lang_ja": "日本語",
+    "lang_en": "English",
+
+    "version_title": "バージョン情報",
+    "version_text": "画像オーバーレイ コントローラー\nバージョン: 1.0.0",
+    "license_title": "ライセンス情報",
+    "license_text": "このソフトウェアは MIT ライセンスの下で配布されています。\n\n(c) 2025 [あなたの名前または組織名]",
+    "help_url": "https://github.com/your_username/your_repository",
+    "language_change_title": "言語変更",
+    "language_change_text": "言語設定を変更しました。\n一部の変更はアプリケーションの再起動後に反映されます。",
+
+    "monitor_label": "表示モニター:"
+}
