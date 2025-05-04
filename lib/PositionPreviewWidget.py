@@ -40,7 +40,10 @@ class PositionPreviewWidget(QWidget):
         self._drag_start_rect = QRect()       # ドラッグ開始時のオーバーレイ矩形 (ウィジェット内座標)
 
         # --- ウィジェット設定 ---
-        self.setMinimumSize(150, 100) # ウィジェットの最小サイズを設定 (以前の修正)
+        # 以前の修正で導入したが、元のコードにはなかったためコメントアウト（必要なら有効化）
+        # self.setMinimumSize(150, 100)
+        # 元のコードにあった設定
+        self.setMinimumSize(100, 50)
         self.setMouseTracking(True)   # マウスボタンが押されていなくてもmousemoveイベントを補足する
 
     def setMonitorGeometry(self, width: int, height: int):
@@ -305,41 +308,35 @@ class PositionPreviewWidget(QWidget):
                 # 各ハンドルに応じたリサイズ計算 (アスペクト比維持)
                 # round() を使って整数に丸める
                 if self._dragging_mode == HANDLE_BOTTOM_RIGHT: # 右下ハンドル
-                    # 幅を基準に高さを計算 -> アスペクト比維持のため再計算
                     temp_w = max(min_w_preview, self._drag_start_rect.width() + delta.x())
                     temp_h = max(min_h_preview, int(round(temp_w / self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else temp_w)
                     final_w = int(round(temp_h * self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else temp_h
                     final_h = temp_h
-                    # モニター矩形の右下を超えないように制限
                     new_right = min(self._monitor_rect.right() + 1, new_rect.left() + final_w)
                     new_bottom = min(self._monitor_rect.bottom() + 1, new_rect.top() + final_h)
                     final_w = new_right - new_rect.left()
                     final_h = new_bottom - new_rect.top()
-                    # 制限によってアスペクト比が崩れた可能性があるので再調整（小さい方に合わせる）
                     if self._overlay_aspect_ratio > 0:
                         if final_w / self._overlay_aspect_ratio < final_h:
                              final_h = int(round(final_w / self._overlay_aspect_ratio))
                         else:
                              final_w = int(round(final_h * self._overlay_aspect_ratio))
-                    new_rect.setSize(QSize(max(min_w_preview, final_w), max(min_h_preview, final_h))) # 最小サイズ保証
+                    new_rect.setSize(QSize(max(min_w_preview, final_w), max(min_h_preview, final_h)))
 
                 elif self._dragging_mode == HANDLE_TOP_LEFT: # 左上ハンドル
                     temp_w = max(min_w_preview, self._drag_start_rect.width() - delta.x())
                     temp_h = max(min_h_preview, int(round(temp_w / self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else temp_w)
                     final_w = int(round(temp_h * self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else temp_h
                     final_h = temp_h
-                    # モニター矩形の左上を超えないように制限
                     new_left = max(self._monitor_rect.left(), self._drag_start_rect.right() + 1 - final_w)
                     new_top = max(self._monitor_rect.top(), self._drag_start_rect.bottom() + 1 - final_h)
                     final_w = self._drag_start_rect.right() + 1 - new_left
                     final_h = self._drag_start_rect.bottom() + 1 - new_top
-                    # アスペクト比再調整
                     if self._overlay_aspect_ratio > 0:
                         if final_w / self._overlay_aspect_ratio < final_h:
                             final_h = int(round(final_w / self._overlay_aspect_ratio))
                         else:
                             final_w = int(round(final_h * self._overlay_aspect_ratio))
-                    # 左上基準で位置とサイズを設定
                     new_rect.setTopLeft(QPoint(new_left, new_top))
                     new_rect.setSize(QSize(max(min_w_preview, final_w), max(min_h_preview, final_h)))
 
@@ -348,94 +345,67 @@ class PositionPreviewWidget(QWidget):
                      temp_h = max(min_h_preview, int(round(temp_w / self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else temp_w)
                      final_w = int(round(temp_h * self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else temp_h
                      final_h = temp_h
-                     # モニター矩形の左下を超えないように制限
                      new_left = max(self._monitor_rect.left(), self._drag_start_rect.right() + 1 - final_w)
                      new_bottom = min(self._monitor_rect.bottom() + 1, self._drag_start_rect.top() + final_h)
                      final_w = self._drag_start_rect.right() + 1 - new_left
                      final_h = new_bottom - self._drag_start_rect.top()
-                     # アスペクト比再調整
                      if self._overlay_aspect_ratio > 0:
                         if final_w / self._overlay_aspect_ratio < final_h:
                             final_h = int(round(final_w / self._overlay_aspect_ratio))
                         else:
                             final_w = int(round(final_h * self._overlay_aspect_ratio))
-                     # 左下基準で位置とサイズを設定
                      new_rect.setBottomLeft(QPoint(new_left, new_bottom))
                      new_rect.setSize(QSize(max(min_w_preview, final_w), max(min_h_preview, final_h)))
+
 
                 elif self._dragging_mode == HANDLE_TOP_RIGHT: # 右上ハンドル
                      temp_w = max(min_w_preview, self._drag_start_rect.width() + delta.x())
                      temp_h = max(min_h_preview, int(round(temp_w / self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else temp_w)
                      final_w = int(round(temp_h * self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else temp_h
                      final_h = temp_h
-                     # モニター矩形の右上を超えないように制限
                      new_right = min(self._monitor_rect.right() + 1, self._drag_start_rect.left() + final_w)
                      new_top = max(self._monitor_rect.top(), self._drag_start_rect.bottom() + 1 - final_h)
                      final_w = new_right - self._drag_start_rect.left()
                      final_h = self._drag_start_rect.bottom() + 1 - new_top
-                     # アスペクト比再調整
                      if self._overlay_aspect_ratio > 0:
                         if final_w / self._overlay_aspect_ratio < final_h:
                             final_h = int(round(final_w / self._overlay_aspect_ratio))
                         else:
                             final_w = int(round(final_h * self._overlay_aspect_ratio))
-                     # 右上基準で位置とサイズを設定
                      new_rect.setTopRight(QPoint(new_right, new_top))
                      new_rect.setSize(QSize(max(min_w_preview, final_w), max(min_h_preview, final_h)))
 
 
             # --- 3. 変更の適用と通知 ---
-            # 計算の結果、プレビュー矩形が変化した場合
-            # かつ、モニター矩形の幅と高さが有効な場合（ゼロ除算防止）
             if self._overlay_rect != new_rect and self._monitor_rect.width() > 0 and self._monitor_rect.height() > 0:
-
-                # --- 3a. プレビュー座標/サイズを実際の座標/サイズに変換 ---
-                # モニター矩形内での相対的な比率を計算
                 rel_x_ratio = (new_rect.left() - self._monitor_rect.left()) / self._monitor_rect.width()
                 rel_y_ratio = (new_rect.top() - self._monitor_rect.top()) / self._monitor_rect.height()
-                rel_w_ratio = new_rect.width() / self._monitor_rect.width()
-                rel_h_ratio = new_rect.height() / self._monitor_rect.height()
-                # 比率と実際のモニター解像度から、新しい実際の相対座標とサイズを計算
-                new_actual_rel_x = max(0, int(round(rel_x_ratio * self._monitor_width_px))) # round追加, 0未満禁止
-                new_actual_rel_y = max(0, int(round(rel_y_ratio * self._monitor_height_px))) # round追加, 0未満禁止
-                new_actual_w = max(1, int(round(rel_w_ratio * self._monitor_width_px))) # round追加, 1未満禁止
-                new_actual_h = max(1, int(round(rel_h_ratio * self._monitor_height_px))) # round追加, 1未満禁止
+                new_actual_rel_x = max(0, int(round(rel_x_ratio * self._monitor_width_px)))
+                new_actual_rel_y = max(0, int(round(rel_y_ratio * self._monitor_height_px)))
 
-                # --- 3b. 内部状態との比較 ---
+                new_actual_w = max(1, int(round((new_rect.width() / self._monitor_rect.width()) * self._monitor_width_px)))
+                new_actual_h = max(1, int(round((new_rect.height() / self._monitor_rect.height()) * self._monitor_height_px)))
+
                 position_changed = (self._overlay_relative_pos != QPoint(new_actual_rel_x, new_actual_rel_y))
                 size_changed = (self._overlay_actual_width != new_actual_w or self._overlay_actual_height != new_actual_h)
 
-                # --- 3c. 内部状態更新 ---
-                if position_changed:
-                    self._overlay_relative_pos = QPoint(new_actual_rel_x, new_actual_rel_y)
+                if position_changed: self._overlay_relative_pos = QPoint(new_actual_rel_x, new_actual_rel_y)
                 if size_changed:
                     self._overlay_actual_width = new_actual_w
                     self._overlay_actual_height = new_actual_h
-                    # アスペクト比も更新
                     if self._overlay_actual_height > 0:
                         self._overlay_aspect_ratio = self._overlay_actual_width / self._overlay_actual_height
-                    else:
-                        self._overlay_aspect_ratio = 1.0
 
-                # --- 3d. プレビュー矩形更新 ---
-                # 計算/制限された後のプレビュー矩形を内部状態に反映
-                # これにより、次回の mouseMoveEvent ではこの新しい矩形が _drag_start_rect の代わりに使用されるわけではない
-                # (常にドラッグ開始時の _drag_start_rect を基準にするため)
-                # しかし、paintEvent で正しい矩形が描画されるように更新は必要
                 self._overlay_rect = new_rect
 
-                # --- 3e. シグナル発行 ---
-                # 位置またはサイズが実際に変更された場合のみシグナルを発行
                 if position_changed or size_changed:
                     self.overlayGeometryChanged.emit()
 
-                self.update() # ウィジェットを再描画して変更を反映
+                self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         """マウスボタン解放イベントハンドラ。"""
-        # 左ボタンが解放され、かつドラッグ/リサイズ中だった場合
         if event.button() == Qt.MouseButton.LeftButton and self._dragging_mode != HANDLE_NONE:
-            self._dragging_mode = HANDLE_NONE # ドラッグモード解除
-            # 解放時のマウス位置でカーソル形状を更新するために mouseMoveEvent を呼び出す
-            self.mouseMoveEvent(event)
-            self.update() # 念のため再描画
+            self._dragging_mode = HANDLE_NONE
+            self.mouseMoveEvent(event) # カーソル形状更新のため
+            self.update()
