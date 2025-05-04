@@ -1,6 +1,6 @@
 import os
 import json
-from lib.config_lib import cf_load
+from lib.cnf_loader import cf_load
 
 def lang_load(lang_code : str = None) -> object:
     """

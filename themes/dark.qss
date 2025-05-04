@@ -1,0 +1,85 @@
+/* Dark Theme - Example */
+QWidget {
+    background-color: #3c3c3c;
+    color: #ffffff;
+}
+QMainWindow {
+    background-color: #3c3c3c;
+}
+QMenuBar {
+    background-color: #4a4a4a;
+    color: #ffffff;
+}
+QMenuBar::item:selected {
+    background-color: #5a5a5a;
+}
+QMenu {
+    background-color: #4a4a4a;
+    color: #ffffff;
+    border: 1px solid #5a5a5a;
+}
+QMenu::item:selected {
+    background-color: #5a5a5a;
+}
+QPushButton {
+    background-color: #5a5a5a;
+    border: 1px solid #6a6a6a;
+    padding: 4px;
+    color: #ffffff;
+    min-height: 1em;
+}
+QPushButton:hover {
+    background-color: #686868;
+}
+QPushButton:pressed {
+    background-color: #484848;
+}
+QSlider::groove:horizontal {
+    border: 1px solid #5a5a5a;
+    height: 8px;
+    background: #505050;
+    margin: 2px 0;
+    border-radius: 4px;
+}
+QSlider::handle:horizontal {
+    background: #8a8a8a;
+    border: 1px solid #5a5a5a;
+    width: 13px;
+    margin: -2px 0;
+    border-radius: 4px;
+}
+QComboBox {
+    border: 1px solid #5a5a5a;
+    padding: 1px 18px 1px 3px;
+    min-width: 6em;
+    background-color: #4a4a4a;
+    color: #ffffff;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 15px;
+    border-left-width: 1px;
+    border-left-color: #6a6a6a;
+    border-left-style: solid;
+    background-color: #5a5a5a;
+}
+ QComboBox QAbstractItemView {
+    border: 1px solid #6a6a6a;
+    background-color: #4a4a4a;
+    selection-background-color: #5a5a5a;
+    color: #ffffff; /* Ensure dropdown text color */
+}
+QLabel {
+    color: #ffffff;
+}
+QLabel#path_label { /* Path label slightly dimmer */
+    color: #bbbbbb;
+}
+QCheckBox {
+    color: #ffffff;
+}
+QStatusBar { /* Status bar styling */
+    color: #ffffff;
+}
+/* Add more specific styles */
