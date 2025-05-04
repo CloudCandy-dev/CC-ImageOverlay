@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QWidget, QApplication
 from PySide6.QtGui import QPainter, QColor, QBrush, QPen, QMouseEvent, QPaintEvent, QCursor
 from PySide6.QtCore import Qt, Slot, Signal, QPoint, QRect, QSize, QMargins, QLineF
 
-# ハンドルの種類
+# --- 定数: ハンドルの種類 ---
 HANDLE_NONE = 0
 HANDLE_TOP_LEFT = 1
 HANDLE_TOP_RIGHT = 2
@@ -13,29 +13,31 @@ HANDLE_MOVE = 5
 
 class PositionPreviewWidget(QWidget):
     """オーバーレイ位置とサイズを視覚的に操作するためのプレビューウィジェット"""
-    overlayGeometryChanged = Signal() # 位置またはサイズが変わったことを通知
-    HANDLE_SIZE = 8 # ハンドルのピクセルサイズ
+    overlayGeometryChanged = Signal() # ジオメトリ変更通知シグナル
+    HANDLE_SIZE = 8                   # ハンドルのピクセルサイズ
 
     def __init__(self, parent=None):
         """コンストラクタ"""
         super().__init__(parent)
-        self._monitor_aspect_ratio = 16 / 9 # モニターのアスペクト比
-        self._monitor_rect = QRect()        # ウィジェット内でのモニター表示領域
-        self._overlay_rect = QRect()        # ウィジェット内でのオーバーレイ表示領域
-        self._overlay_relative_pos = QPoint(0, 0) # オーバーレイの実際の相対位置(px)
-        self._overlay_actual_width = 50     # オーバーレイの実際の幅(px)
-        self._overlay_actual_height = 50    # オーバーレイの実際の高さ(px)
-        self._overlay_aspect_ratio = 1.0    # オーバーレイのアスペクト比
-        self._monitor_width_px = 1920       # モニターの実際の幅(px)
-        self._monitor_height_px = 1080      # モニターの実際の高さ(px)
-        self._dragging_mode = HANDLE_NONE   # ドラッグ操作の種類
-        self._drag_start_pos = QPoint()     # ドラッグ開始時のカーソル位置(グローバル)
-        self._drag_start_rect = QRect()     # ドラッグ開始時のオーバーレイ矩形(ウィジェット内)
-        self.setMinimumSize(100, 50)        # ウィジェットの最小サイズ (元の値)
-        self.setMouseTracking(True)         # マウス追跡有効化
+        # --- 内部変数初期化 ---
+        self._monitor_aspect_ratio = 16 / 9
+        self._monitor_rect = QRect()
+        self._overlay_rect = QRect()
+        self._overlay_relative_pos = QPoint(0, 0)
+        self._overlay_actual_width = 50
+        self._overlay_actual_height = 50
+        self._overlay_aspect_ratio = 1.0
+        self._monitor_width_px = 1920
+        self._monitor_height_px = 1080
+        self._dragging_mode = HANDLE_NONE
+        self._drag_start_pos = QPoint()
+        self._drag_start_rect = QRect()
+        # --- ウィジェット設定 ---
+        self.setMinimumSize(100, 50)
+        self.setMouseTracking(True)
 
     def setMonitorGeometry(self, width: int, height: int):
-        """モニターのジオメトリ(解像度)を設定する"""
+        """モニターの解像度を設定"""
         if width > 0 and height > 0:
             changed = (self._monitor_width_px != width or self._monitor_height_px != height)
             if changed:
@@ -46,7 +48,7 @@ class PositionPreviewWidget(QWidget):
                 self.update()           # 再描画
 
     def setOverlayInfo(self, rel_x: int, rel_y: int, overlay_actual_w: int, overlay_actual_h: int):
-        """オーバーレイ情報(位置、サイズ)を設定する"""
+        """オーバーレイ情報(位置、サイズ)を設定"""
         new_pos = QPoint(rel_x, rel_y)
         new_w = max(1, overlay_actual_w)
         new_h = max(1, overlay_actual_h)
@@ -59,29 +61,28 @@ class PositionPreviewWidget(QWidget):
             self._overlay_actual_height = new_h
             if self._overlay_actual_height > 0:
                 self._overlay_aspect_ratio = self._overlay_actual_width / self._overlay_actual_height
-            else:
-                self._overlay_aspect_ratio = 1.0
+            else: self._overlay_aspect_ratio = 1.0
 
         if pos_changed or size_changed:
             self._calculate_rects() # 内部矩形再計算
             self.update()           # 再描画
 
     def getOverlayRelativePos(self) -> QPoint:
-        """オーバーレイの相対位置を取得する"""
+        """オーバーレイの相対位置を取得"""
         return self._overlay_relative_pos
 
     def getOverlayActualSize(self) -> QSize:
-        """オーバーレイの実際のサイズを取得する"""
+        """オーバーレイの実際のサイズを取得"""
         return QSize(self._overlay_actual_width, self._overlay_actual_height)
 
     def _calculate_rects(self):
-        """ウィジェット内のモニターとオーバーレイの描画矩形を計算する"""
+        """ウィジェット内のモニターとオーバーレイの描画矩形を計算"""
         widget_rect = self.rect().adjusted(1, 1, -1, -1)
         if widget_rect.width() <= 0 or widget_rect.height() <= 0: return
 
         widget_aspect_ratio = widget_rect.width() / widget_rect.height()
 
-        # モニター矩形の計算
+        # モニター矩形計算
         if widget_aspect_ratio > self._monitor_aspect_ratio:
             h = widget_rect.height()
             w = int(round(h * self._monitor_aspect_ratio))
@@ -94,7 +95,7 @@ class PositionPreviewWidget(QWidget):
             y = widget_rect.y() + (widget_rect.height() - h) // 2
         self._monitor_rect = QRect(x, y, w, h)
 
-        # オーバーレイ矩形の計算
+        # オーバーレイ矩形計算
         if self._monitor_width_px > 0 and self._monitor_height_px > 0 and w > 0 and h > 0:
             rel_w_ratio = self._overlay_actual_width / self._monitor_width_px
             rel_h_ratio = self._overlay_actual_height / self._monitor_height_px
@@ -109,7 +110,7 @@ class PositionPreviewWidget(QWidget):
             preview_x = self._monitor_rect.x() + int(round(w * rel_x_ratio))
             preview_y = self._monitor_rect.y() + int(round(h * rel_y_ratio))
 
-            # モニター矩形内に収めるためのクリッピング
+            # 画面外クリッピング
             if preview_x + preview_w > self._monitor_rect.right() + 1:
                  preview_x = self._monitor_rect.right() + 1 - preview_w
             if preview_y + preview_h > self._monitor_rect.bottom() + 1:
@@ -122,7 +123,7 @@ class PositionPreviewWidget(QWidget):
             self._overlay_rect = QRect()
 
     def _get_handle_rects(self) -> dict[int, QRect]:
-        """リサイズハンドルの矩形辞書を取得する"""
+        """リサイズハンドルの矩形辞書を取得"""
         if self._overlay_rect.isNull(): return {}
         hs = self.HANDLE_SIZE
         hs_half = hs // 2
@@ -159,7 +160,7 @@ class PositionPreviewWidget(QWidget):
                 fill_color = QColor(0, 0, 255, 100) # オーバーレイ領域
                 current_handle = self._get_handle_at(self.mapFromGlobal(QCursor.pos()))
                 if self._dragging_mode == HANDLE_MOVE: fill_color.setAlpha(150)
-                elif current_handle == HANDLE_MOVE and self._dragging_mode == HANDLE_NONE : fill_color.setAlpha(120)
+                elif current_handle == HANDLE_MOVE: fill_color.setAlpha(120)
                 painter.setBrush(QBrush(fill_color))
                 painter.drawRect(self._overlay_rect)
 
@@ -203,12 +204,12 @@ class PositionPreviewWidget(QWidget):
             delta = current_global_pos - self._drag_start_pos
             new_rect = QRect(self._drag_start_rect)
 
-            # --- 位置移動 ---
+            # 移動処理
             if self._dragging_mode == HANDLE_MOVE:
                 new_rect.translate(delta)
                 new_rect.moveLeft(max(self._monitor_rect.left(), min(new_rect.left(), self._monitor_rect.right() + 1 - new_rect.width())))
                 new_rect.moveTop(max(self._monitor_rect.top(), min(new_rect.top(), self._monitor_rect.bottom() + 1 - new_rect.height())))
-            # --- サイズ変更 ---
+            # リサイズ処理
             else:
                 min_w_preview = self.HANDLE_SIZE * 2 + 2
                 min_h_preview = int(round(min_w_preview / self._overlay_aspect_ratio)) if self._overlay_aspect_ratio > 0 else min_w_preview
@@ -305,5 +306,5 @@ class PositionPreviewWidget(QWidget):
         """マウスリリースイベント"""
         if event.button() == Qt.MouseButton.LeftButton and self._dragging_mode != HANDLE_NONE:
             self._dragging_mode = HANDLE_NONE # ドラッグモード解除
-            self.mouseMoveEvent(event) # カーソル形状更新のため
-            self.update() # 再描画
+            self.mouseMoveEvent(event)        # カーソル形状更新のため
+            self.update()                     # 再描画
