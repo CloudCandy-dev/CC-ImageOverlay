@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPixmap, QScreen, QAction, QActionGroup, QCursor
 from PySide6.QtCore import Qt, Slot, QPoint, QSize, QRect
-from lib.lang_loader import lang_load, get_text, config_data, lang_data
+from lib.lang_loader import lang_load, get_text
 from lib.cnf_loader import cf_load, cf_change
 from lib.PositionPreviewWidget import PositionPreviewWidget # libからインポート
 
