@@ -10,41 +10,44 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPixmap, QScreen, QAction, QActionGroup, QCursor
 from PySide6.QtCore import Qt, Slot, QPoint, QSize, QRect
 # --- ローカルライブラリインポート (元の形式) ---
+from lib.lang_loader import lang_load, get_text, config_data, lang_data
 from lib.cnf_loader import cf_load, cf_change
-# lang_loader から必要な関数と、ロード済みのデータをインポート
-from lib.lang_loader import lang_load, get_text, config_data as lang_config_data, lang_data
 from lib.PositionPreviewWidget import PositionPreviewWidget
 
-# --- グローバル変数 ---
-app_instance = None # QApplication インスタンス参照
-# config_data は MainWindow 内でロード・保持する方が管理しやすい
-# config_data = cf_load() # ここではロードしない
+# --- グローバル アプリケーション参照 ---
+app_instance = None
 
-# --- 関数 ---
+# --- テーマ読み込み関数 ---
 def load_and_apply_theme(theme_name):
-    """指定されたテーマを読み込み適用する。"""
+    """指定されたテーマのスタイルシートを読み込み適用する"""
     global app_instance
     if not app_instance:
-        print("エラー: テーマ適用時に QApplication インスタンスが見つかりません。", file=sys.stderr)
+        print("エラー: テーマ読み込み時に QApplication インスタンスが利用できません。", file=sys.stderr)
         return
 
     qss = ""
     if theme_name != "system":
-        try:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            theme_dir = os.path.join(script_dir, "themes")
-            qss_file = os.path.join(theme_dir, f"{theme_name}.qss")
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        theme_dir = os.path.join(script_dir, "themes")
+        qss_file = os.path.join(theme_dir, f"{theme_name}.qss")
 
-            if os.path.exists(qss_file):
+        if os.path.exists(qss_file):
+            try:
                 with open(qss_file, "r", encoding="utf-8") as f:
                     qss = f.read()
-                print(f"テーマファイルを読み込みました: {qss_file}")
-            else:
-                # lang_loaderが初期化される前なのでget_textは使えない
-                print(f"警告: テーマファイルが見つかりません: {qss_file}", file=sys.stderr)
+            except Exception as e:
+                # MainWindow 初期化完了前に呼ばれる可能性があるので get_text は使わない
+                # get_text が利用可能かどうかわからないので、エラーメッセージは英語で固定
+                error_title = "Theme Loading Error"
+                error_text = f"Failed to load theme file '{os.path.basename(qss_file)}':\n{e}"
+                active_window = QApplication.activeWindow()
+                if active_window: # メッセージボックス表示を試みる
+                     QMessageBox.warning(active_window, error_title, error_text)
+                else: # ダメならコンソールへ
+                     print(f"{error_title}\n{error_text}", file=sys.stderr)
                 qss = ""
-        except Exception as e:
-            print(f"テーマファイル読み込みエラー '{theme_name}.qss': {e}", file=sys.stderr)
+        else:
+            print(f"警告: テーマファイルが見つかりません: {qss_file}", file=sys.stderr)
             qss = ""
 
     try:
@@ -53,9 +56,15 @@ def load_and_apply_theme(theme_name):
          print(f"エラー: テーマ '{theme_name}' のスタイルシート適用中にエラー: {e}", file=sys.stderr)
 
 
-# --- クラス定義 ---
+# --- 初期設定読み込み (元の形式) ---
+config_data = cf_load() # ここでロード (lang_loaderも内部でロードするが、こちらを優先)
+current_lang = config_data.get("language", "ja") # デフォルト "ja" (元のコードに合わせる)
+current_theme = config_data.get("theme", "system") # デフォルト "system" (元のコードに合わせる)
+lang_load(current_lang) # lang_loader内のグローバル lang_data を更新
+
+
 class OverlayWindow(QLabel):
-    """画像オーバーレイ表示用ウィンドウクラス"""
+    """画像を表示するためのオーバーレイウィンドウ"""
     def __init__(self, parent=None):
         """コンストラクタ"""
         super().__init__(parent)
@@ -76,34 +85,28 @@ class OverlayWindow(QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def set_image(self, image_path):
-        """画像をファイルから読み込む"""
+        """画像を読み込む"""
         if image_path and os.path.exists(image_path):
             self.original_pixmap = QPixmap(image_path)
             if self.original_pixmap.isNull():
                 if self.main_window:
-                    try:
-                        status_text = get_text("error_loading_image_failed", image_path=os.path.basename(image_path))
-                        self.main_window.statusBar().showMessage(status_text, 5000)
-                    except Exception: # get_textが失敗しても止めない
-                         print(f"Error loading image: {os.path.basename(image_path)}", file=sys.stderr)
+                    status_text = get_text("error_loading_image_failed", image_path=os.path.basename(image_path))
+                    self.main_window.statusBar().showMessage(status_text, 5000)
                 self.original_pixmap = None
                 self.clear()
             else:
                 if self.main_window:
-                    try:
-                         status_text = get_text("status_image_loaded", filename=os.path.basename(image_path))
-                         self.main_window.statusBar().showMessage(status_text, 3000)
-                    except Exception:
-                         print(f"Image loaded: {os.path.basename(image_path)}", file=sys.stderr)
+                     status_text = get_text("status_image_loaded", filename=os.path.basename(image_path))
+                     self.main_window.statusBar().showMessage(status_text, 3000)
         else:
             self.original_pixmap = None
             self.clear()
 
     def update_display(self):
-        """現在の設定に基づいて表示を更新する"""
+        """表示内容を更新する"""
         if not self.original_pixmap:
             self.clear()
-            if self.isVisible(): self.hide()
+            self.hide()
             return
         try:
             current_factor = self.size_factor
@@ -124,75 +127,74 @@ class OverlayWindow(QLabel):
             self.setFixedSize(new_size)
             self.setWindowOpacity(self.alpha_level)
 
-            # 表示/非表示制御は MainWindow の overlay_enabled に従う
             if self.main_window and self.main_window.overlay_enabled:
                  if not self.isVisible(): self.show()
             else:
                  if self.isVisible(): self.hide()
         except Exception as e:
-             error_message = f"オーバーレイ表示更新中にエラー: {e}"
+             error_message = f"表示更新エラー: {e}"
              if self.main_window:
                  self.main_window.statusBar().showMessage(error_message, 5000)
              print(f"{error_message}", file=sys.stderr)
 
     def set_size_factor(self, factor):
-        """サイズ係数を設定し、表示を更新"""
+        """サイズ係数設定"""
         new_factor = max(0.01, factor)
         if abs(self.size_factor - new_factor) > 1e-6:
              self.size_factor = new_factor
              self.update_display()
 
     def set_alpha(self, alpha_percent):
-        """透明度を設定し、表示を更新"""
+        """透明度設定"""
         new_alpha_level = max(0.0, min(1.0, alpha_percent / 100.0))
         if abs(self.alpha_level - new_alpha_level) > 1e-6:
             self.alpha_level = new_alpha_level
-            # 透明度変更は直接 Opacity 設定
             self.setWindowOpacity(self.alpha_level)
 
     def set_overlay_position(self, x, y):
-        """ウィンドウ位置を設定"""
+        """オーバーレイ位置設定"""
         self.move(x, y)
 
 
 class MainWindow(QMainWindow):
-    """メインコントロールウィンドウクラス"""
+    """メインコントロールウィンドウ"""
     def __init__(self):
         """コンストラクタ"""
         super().__init__()
-        # MainWindow内で設定をロード
-        self.config_data = cf_load()
+        # グローバル変数 config_data を参照 (元のコードの形式)
+        global config_data
 
-        # --- 定数 (デフォルト値) ---
+        # --- 定数 ---
+        # 元のコードのデフォルト値 (Window Height は 480 になっているが、元は 300?)
+        # ユーザー提供のコードでは 480 になっていたのでそちらを採用
         DEFAULT_WINDOW_X = 100; DEFAULT_WINDOW_Y = 100
-        # 元のデフォルト値に戻す
-        DEFAULT_WINDOW_WIDTH = 450; DEFAULT_WINDOW_HEIGHT = 300
+        DEFAULT_WINDOW_WIDTH = 450; DEFAULT_WINDOW_HEIGHT = 480
         DEFAULT_OVERLAY_SIZE = 100; DEFAULT_OVERLAY_ALPHA = 100
         DEFAULT_OVERLAY_REL_X = 0; DEFAULT_OVERLAY_REL_Y = 0
-        DEFAULT_TARGET_MONITOR_NAME = ""; DEFAULT_LAST_IMAGE = ""
-        DEFAULT_THEME = "dark"; DEFAULT_LANG = "en" # 元のデフォルト値
+        # 元のコードのデフォルト値を使用
+        DEFAULT_TARGET_MONITOR_NAME = None; DEFAULT_LAST_IMAGE = None
+        DEFAULT_THEME = "system"
 
         # --- 内部状態変数 ---
-        # 設定ファイルから読み込み、なければデフォルト値
-        initial_x = self.config_data.get("window_x", DEFAULT_WINDOW_X)
-        initial_y = self.config_data.get("window_y", DEFAULT_WINDOW_Y)
-        initial_width = self.config_data.get("window_width", DEFAULT_WINDOW_WIDTH)
-        initial_height = self.config_data.get("window_height", DEFAULT_WINDOW_HEIGHT)
-        self.last_image_path = self.config_data.get("last_image_path", DEFAULT_LAST_IMAGE)
-        self.current_size_percent = self.config_data.get("overlay_size", DEFAULT_OVERLAY_SIZE)
-        self.current_alpha_percent = self.config_data.get("overlay_alpha", DEFAULT_OVERLAY_ALPHA)
-        self.current_relative_x = self.config_data.get("overlay_x", DEFAULT_OVERLAY_REL_X)
-        self.current_relative_y = self.config_data.get("overlay_y", DEFAULT_OVERLAY_REL_Y)
-        self.target_monitor_name = self.config_data.get("target_monitor_name", DEFAULT_TARGET_MONITOR_NAME)
-        self.current_theme = self.config_data.get("theme", DEFAULT_THEME)
-        # 現在の言語は lang_loader が保持しているものを参照する方が一貫性があるかもしれないが、
-        # メニューのチェック状態管理のため、ここでも持つ
-        self.current_lang = self.config_data.get("language", DEFAULT_LANG)
-
+        # グローバルな config_data を使用
+        initial_x = config_data.get("window_x", DEFAULT_WINDOW_X)
+        initial_y = config_data.get("window_y", DEFAULT_WINDOW_Y)
+        initial_width = config_data.get("window_width", DEFAULT_WINDOW_WIDTH)
+        initial_height = config_data.get("window_height", DEFAULT_WINDOW_HEIGHT)
+        self.last_image_path = config_data.get("last_image_path", DEFAULT_LAST_IMAGE)
+        self.current_size_percent = config_data.get("overlay_size", DEFAULT_OVERLAY_SIZE)
+        self.current_alpha_percent = config_data.get("overlay_alpha", DEFAULT_OVERLAY_ALPHA)
+        self.current_relative_x = config_data.get("overlay_x", DEFAULT_OVERLAY_REL_X)
+        self.current_relative_y = config_data.get("overlay_y", DEFAULT_OVERLAY_REL_Y)
+        self.target_monitor_name = config_data.get("target_monitor_name", DEFAULT_TARGET_MONITOR_NAME)
+        # self.current_theme はグローバル変数 current_theme を参照 (元の形式)
+        # self.current_theme = config_data.get("theme", DEFAULT_THEME) # これは不要
+        # self.current_lang はグローバル変数 current_lang を参照 (元の形式)
+        # self.current_lang = config_data.get("language", "ja") # これは不要
         self.overlay_enabled = False
         self.image_path = None
 
-        # --- ウィンドウ設定 ---
+        # --- ウィンドウ基本設定 ---
         self.setGeometry(initial_x, initial_y, initial_width, initial_height)
         self.setStatusBar(QStatusBar())
         self.screens = QApplication.screens()
@@ -200,7 +202,7 @@ class MainWindow(QMainWindow):
         # --- 子ウィジェット作成 ---
         self.overlay_window = OverlayWindow(self)
 
-        # --- UI初期化 ---
+        # --- UI初期化プロセス ---
         self._create_actions()
         self._create_menus()
         self._create_widgets()
@@ -210,7 +212,9 @@ class MainWindow(QMainWindow):
         self._initialize_ui_state()
 
     def _create_actions(self):
-        """メニューアクション作成"""
+        """アクション作成"""
+        # グローバル変数 current_lang, current_theme を参照
+        global current_lang, current_theme
         self.exit_action = QAction(self)
         self.exit_action.triggered.connect(self.close)
         self.help_action = QAction(self)
@@ -224,16 +228,16 @@ class MainWindow(QMainWindow):
         self.lang_group.setExclusive(True)
         self.lang_group.triggered.connect(self._change_language)
         self.lang_ja_action = QAction("", self, checkable=True, data="ja")
-        if self.current_lang == "ja": self.lang_ja_action.setChecked(True)
+        if current_lang == "ja": self.lang_ja_action.setChecked(True)
         self.lang_group.addAction(self.lang_ja_action)
         self.lang_en_action = QAction("", self, checkable=True, data="en")
-        if self.current_lang == "en": self.lang_en_action.setChecked(True)
+        if current_lang == "en": self.lang_en_action.setChecked(True)
         self.lang_group.addAction(self.lang_en_action)
         self.lang_cn_action = QAction("", self, checkable=True, data="cn")
-        if self.current_lang == "cn": self.lang_cn_action.setChecked(True)
+        if current_lang == "cn": self.lang_cn_action.setChecked(True)
         self.lang_group.addAction(self.lang_cn_action)
         self.lang_kr_action = QAction("", self, checkable=True, data="kr")
-        if self.current_lang == "kr": self.lang_kr_action.setChecked(True)
+        if current_lang == "kr": self.lang_kr_action.setChecked(True)
         self.lang_group.addAction(self.lang_kr_action)
 
         self.theme_group = QActionGroup(self)
@@ -242,15 +246,16 @@ class MainWindow(QMainWindow):
         self.theme_light_action = QAction("", self, checkable=True, data="light")
         self.theme_dark_action = QAction("", self, checkable=True, data="dark")
         self.theme_system_action = QAction("", self, checkable=True, data="system")
-        if self.current_theme == "light": self.theme_light_action.setChecked(True)
-        elif self.current_theme == "dark": self.theme_dark_action.setChecked(True)
+        # グローバル変数 current_theme を参照
+        if current_theme == "light": self.theme_light_action.setChecked(True)
+        elif current_theme == "dark": self.theme_dark_action.setChecked(True)
         else: self.theme_system_action.setChecked(True)
         self.theme_group.addAction(self.theme_light_action)
         self.theme_group.addAction(self.theme_dark_action)
         self.theme_group.addAction(self.theme_system_action)
 
     def _create_menus(self):
-        """メニューバー作成"""
+        """メニュー作成"""
         menu_bar = self.menuBar()
         self.file_menu = menu_bar.addMenu("")
         self.info_menu = menu_bar.addMenu("")
@@ -332,7 +337,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
     def _connect_signals(self):
-        """シグナルとスロット接続"""
+        """シグナル接続"""
         self.select_button.clicked.connect(self.select_image)
         self.enable_checkbox.stateChanged.connect(self.toggle_overlay)
         self.monitor_combo.currentIndexChanged.connect(self._on_monitor_selected)
@@ -348,10 +353,8 @@ class MainWindow(QMainWindow):
         self.size_slider.setValue(self.current_size_percent)
         self.pos_x_slider.setValue(self.current_relative_x)
         self.pos_y_slider.setValue(self.current_relative_y)
-
         self._update_preview_widget_info()
         self._update_slider_ranges()
-
         self.set_controls_enabled(False)
         self.enable_checkbox.setEnabled(False)
 
@@ -363,23 +366,21 @@ class MainWindow(QMainWindow):
                 is_image_loaded = True
             else:
                 self.image_path = None
-                self.last_image_path = None # 読み込めなければクリア
+                self.last_image_path = None
 
-        # ラベルは最後に再翻訳で設定
+        # UIテキスト設定 (path_label含む)
         self._retranslate_ui()
 
         self.set_controls_enabled(is_image_loaded)
         self.enable_checkbox.setEnabled(is_image_loaded)
 
         if is_image_loaded:
+            # 設定適用し、位置を確定
             self.overlay_window.set_size_factor(self.current_size_percent / 100.0)
             self.overlay_window.set_alpha(self.current_alpha_percent)
             self._update_slider_ranges()
             self._update_preview_widget_info()
-            # --- バグ修正箇所 ---
-            # 初期化時にも update_position を呼び、初期位置を設定する
-            self.update_position()
-            # --- バグ修正箇所 ここまで ---
+            self.update_position() # 初期位置を設定
 
     def _populate_monitor_combo(self):
         """モニターコンボボックス初期化"""
@@ -400,23 +401,30 @@ class MainWindow(QMainWindow):
              print("警告: 利用可能なスクリーンが見つかりません。", file=sys.stderr)
              return
         for i, screen in enumerate(self.screens):
-            screen_name_display = f"Monitor {i+1}: {screen.name()} ({screen.geometry().width()}x{screen.geometry().height()})"
-            if screen.name() == primary_screen_name:
+            screen_name = screen.name()
+            screen_name_display = f"Monitor {i+1}: {screen_name} ({screen.geometry().width()}x{screen.geometry().height()})"
+            if screen_name == primary_screen_name:
                 screen_name_display += " (Primary)"
-            self.monitor_combo.addItem(screen_name_display, userData=screen.name())
-            if saved_monitor_name == screen.name(): selected_index = i
-            elif saved_monitor_name is None and screen.name() == primary_screen_name: selected_index = i
+            self.monitor_combo.addItem(screen_name_display, userData=screen_name)
+            # 元のコードでは None チェックがなかったため、それに合わせる
+            if saved_monitor_name == screen_name: selected_index = i
+            # elif saved_monitor_name is None and screen_name == primary_screen_name: selected_index = i # 元のコードでは None チェックなし
+            # 元のコードでは空文字列""との比較はしていない
+            elif saved_monitor_name == "" and screen_name == primary_screen_name: selected_index = i
+
+
         if selected_index != -1:
              self.monitor_combo.setCurrentIndex(selected_index)
              current_selection_name = self.monitor_combo.itemData(selected_index)
         elif self.monitor_combo.count() > 0:
             self.monitor_combo.setCurrentIndex(0)
             current_selection_name = self.monitor_combo.itemData(0)
+        # self.target_monitor_name を更新
         self.target_monitor_name = current_selection_name
         self.monitor_combo.blockSignals(False)
 
     def _get_selected_screen(self) -> QScreen | None:
-        """選択中のスクリーンオブジェクト取得"""
+        """選択中のQScreenオブジェクト取得"""
         selected_name = self.monitor_combo.currentData()
         if selected_name:
             for screen in self.screens:
@@ -424,6 +432,7 @@ class MainWindow(QMainWindow):
         if self.screens:
              primary = QApplication.primaryScreen()
              if primary: return primary
+             # 元のコードでは最初のスクリーンを返すフォールバックがあった
              if self.screens: return self.screens[0]
         return None
 
@@ -478,7 +487,7 @@ class MainWindow(QMainWindow):
     def _on_monitor_selected(self):
         """モニター選択変更時処理"""
         new_monitor_name = self.monitor_combo.currentData()
-        # Noneチェックを追加
+        # 元のコードでは None チェックがあったのでそれに合わせる
         if new_monitor_name is not None and new_monitor_name != self.target_monitor_name:
              self.target_monitor_name = new_monitor_name
              self._update_slider_ranges()
@@ -498,15 +507,20 @@ class MainWindow(QMainWindow):
         self.language_menu.setTitle(get_text("action_language"))
         for action in self.lang_group.actions():
             lang_code = action.data()
-            action.setText(get_text(f"lang_{lang_code}"))
-
+            # 元のコードの形式に合わせる
+            if lang_code == "ja": action.setText(get_text("lang_ja"))
+            elif lang_code == "en": action.setText(get_text("lang_en"))
+            elif lang_code == "cn": action.setText(get_text("lang_cn"))
+            elif lang_code == "kr": action.setText(get_text("lang_kr"))
         self.theme_menu.setTitle(get_text("action_theme"))
         for action in self.theme_group.actions():
             theme_name = action.data()
-            action.setText(get_text(f"theme_{theme_name}"))
+            # 元のコードの形式に合わせる
+            if theme_name == "light": action.setText(get_text("theme_light"))
+            elif theme_name == "dark": action.setText(get_text("theme_dark"))
+            elif theme_name == "system": action.setText(get_text("theme_system"))
 
         self.select_button.setText(get_text("select_image_button"))
-        # パスラベルもここで更新
         if self.image_path:
             self.path_label.setText(os.path.basename(self.image_path))
         else:
@@ -523,8 +537,9 @@ class MainWindow(QMainWindow):
         url = get_text("help_url")
         if url and url.startswith("http"):
              try: webbrowser.open(url)
-             except Exception as e: QMessageBox.warning(self, "Error", f"ヘルプURLを開けませんでした: {e}")
-        else: QMessageBox.information(self, "Help", "ヘルプURLが設定されていません。")
+             # 元のコードではエラーメッセージを翻訳していなかった
+             except Exception as e: QMessageBox.warning(self, "Error", f"Could not open help URL: {e}")
+        else: QMessageBox.information(self, "Help", "Help URL is not configured.")
 
     @Slot()
     def _handle_version(self):
@@ -542,35 +557,36 @@ class MainWindow(QMainWindow):
 
     @Slot(QAction)
     def _change_language(self, action):
-        """言語変更処理"""
-        # lang_loader 内のグローバル変数を参照・更新しないようにする
-        global lang_data # lang_loader の lang_data を直接参照する必要がある場合
+        """言語変更処理 (元の形式)"""
+        # グローバル変数を参照・更新
+        global current_lang, lang_data
         new_lang = action.data()
-        if new_lang and new_lang != self.current_lang:
+        if new_lang and new_lang != current_lang:
             cf_change("language", new_lang)
-            self.current_lang = new_lang # MainWindow の属性を更新
-            # lang_loader の lang_load を呼び出してグローバルな lang_data を更新
-            lang_data = lang_load(new_lang) # lang_load が lang_data を更新し、それを返す想定
-            # lang_data が None でないかチェック (lang_loadが失敗した場合など)
-            if lang_data is None:
-                lang_data = {} # 安全のため空の辞書に
+            current_lang = new_lang # グローバル変数更新
+            lang_data = lang_load(current_lang) # グローバル変数 lang_data 更新
+            if lang_data is None: # 念のためチェック
+                lang_data = {}
+                # 元のコードではメッセージボックスは出さない
                 print(f"エラー: 言語データ({new_lang})の読み込みに失敗しました。", file=sys.stderr)
-                # エラーメッセージ表示
-                QMessageBox.warning(self, "Error", f"Failed to load language: {new_lang}")
-                # 必要ならデフォルト言語に戻す処理を追加
-                # cf_change("language", "en")
-                # self.current_lang = "en"
-                # lang_data = lang_load("en")
-
+            # self.current_lang = new_lang # MainWindow内の属性は不要（グローバルを参照）
             self._retranslate_ui()
             self._populate_monitor_combo()
+            # 元のコードには言語変更メッセージボックスがあった
+            title = get_text("language_change_title")
+            text = get_text("language_change_text")
+            QMessageBox.information(self, title, text)
+
 
     @Slot(QAction)
     def _change_theme(self, action):
         """テーマ変更処理"""
+        # グローバル変数 current_theme を参照・更新
+        global current_theme
         new_theme = action.data()
-        if new_theme and new_theme != self.current_theme:
-            self.current_theme = new_theme
+        if new_theme and new_theme != current_theme:
+            current_theme = new_theme # グローバル変数更新
+            # self.current_theme = new_theme # MainWindow内の属性は不要
             cf_change("theme", new_theme)
             load_and_apply_theme(new_theme)
 
@@ -585,7 +601,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def select_image(self):
-        """画像選択処理 (バグ修正箇所あり)"""
+        """画像選択処理"""
         start_dir = os.path.dirname(self.image_path) if self.image_path else ""
         file_path, _ = QFileDialog.getOpenFileName(
             self, get_text("select_image_dialog_title"), start_dir, get_text("image_files_filter")
@@ -593,7 +609,7 @@ class MainWindow(QMainWindow):
         if file_path:
             self.image_path = file_path
             self.last_image_path = file_path
-            # self.path_label.setText(os.path.basename(file_path)) # _retranslate_ui で行う
+            # self.path_label.setText(os.path.basename(file_path)) # _retranslate_ui で設定
             self.overlay_window.set_image(self.image_path)
 
             is_image_loaded = self.overlay_window.original_pixmap is not None
@@ -602,17 +618,12 @@ class MainWindow(QMainWindow):
             self.set_controls_enabled(is_image_loaded)
 
             if is_image_loaded:
-                # 設定適用 -> スライダー/プレビュー更新 -> 位置更新 の順
-                self.overlay_window.set_size_factor(self.current_size_percent / 100.0)
-                self.overlay_window.set_alpha(self.current_alpha_percent)
-                self._update_slider_ranges()
-                self._update_preview_widget_info()
-                # --- バグ修正箇所 ---
-                # 画像選択後、表示状態に関わらず必ず初期位置を設定する
-                self.update_position()
-                # --- バグ修正箇所 ここまで ---
+                # 設定適用 -> スライダー/プレビュー更新 -> 位置更新
+                self._update_state_from_size_slider(self.current_size_percent)
+                self._update_state_from_alpha_slider(self.current_alpha_percent)
+                # update_position は上記で呼ばれる
 
-                # チェックボックスの状態に合わせて表示/非表示
+                # チェックボックス状態に合わせて表示
                 if self.overlay_enabled:
                     self.overlay_window.show()
                 else:
@@ -627,13 +638,18 @@ class MainWindow(QMainWindow):
 
     @Slot(int)
     def toggle_overlay(self, state):
-        """表示チェックボックス状態変更処理 (修正済み)"""
+        """表示チェックボックス状態変更処理 (修正版)"""
         self.overlay_enabled = (state == Qt.CheckState.Checked.value)
         is_image_loaded = self.image_path is not None and self.overlay_window.original_pixmap is not None
 
         if self.overlay_enabled and is_image_loaded:
-            # 位置は select_image やスライダー操作で設定されているはず
-            self.overlay_window.show()
+            # --- バグ修正箇所 ---
+            # 不要な更新処理を削除
+            # self._update_state_from_size_slider(self.current_size_percent)
+            # self._update_state_from_alpha_slider(self.current_alpha_percent)
+            # self.update_position()
+            # --- バグ修正箇所 ここまで ---
+            self.overlay_window.show() # 表示するだけ
         else:
             self.overlay_window.hide()
 
@@ -643,12 +659,10 @@ class MainWindow(QMainWindow):
         if self.current_size_percent == value: return
         self.current_size_percent = value
         self.size_label.setText(get_text("size_label", value=value))
-        # size_factor 設定 -> update_display 呼び出し
-        self.overlay_window.set_size_factor(value / 100.0)
-        # update_display 後に範囲とプレビューと位置を更新
+        self.overlay_window.set_size_factor(value / 100.0) # 表示更新含む
         self._update_slider_ranges()
         self._update_preview_widget_info()
-        self.update_position()
+        self.update_position() # 位置更新
 
     @Slot(int)
     def _update_state_from_alpha_slider(self, value):
@@ -656,12 +670,17 @@ class MainWindow(QMainWindow):
         if self.current_alpha_percent == value: return
         self.current_alpha_percent = value
         self.alpha_label.setText(get_text("alpha_label", value=value))
-        self.overlay_window.set_alpha(value)
+        self.overlay_window.set_alpha(value) # Opacityのみ更新
 
     @Slot()
     def _update_controls_from_preview_geom(self):
         """プレビューウィジェット変更処理"""
         if not self.position_preview.isEnabled(): return
+
+        # 元のコードにはチェックがなかったので削除 (必要なら復活させる)
+        # if not self.overlay_enabled or not self.image_path or not self.overlay_window.original_pixmap:
+        #    self._update_preview_widget_info()
+        #    return
 
         new_rel_pos = self.position_preview.getOverlayRelativePos()
         new_actual_size = self.position_preview.getOverlayActualSize()
@@ -672,6 +691,7 @@ class MainWindow(QMainWindow):
         position_changed = (self.current_relative_x != new_rel_x or self.current_relative_y != new_rel_y)
         size_changed = False
 
+        # サイズ変更反映
         if self.overlay_window.original_pixmap and not self.overlay_window.original_pixmap.isNull():
             original_w = self.overlay_window.original_pixmap.width()
             if original_w > 0:
@@ -684,12 +704,13 @@ class MainWindow(QMainWindow):
                     self.size_slider.setValue(new_percent)
                     self.size_slider.blockSignals(False)
                     self.size_label.setText(get_text("size_label", value=new_percent))
-                    self.overlay_window.set_size_factor(new_percent / 100.0)
+                    self.overlay_window.set_size_factor(new_percent / 100.0) # 表示更新
 
+        # 位置変更反映
         if position_changed:
             self.current_relative_x = new_rel_x
             self.current_relative_y = new_rel_y
-            self._update_slider_ranges()
+            self._update_slider_ranges() # 範囲更新 -> 値設定 -> ラベル更新
             self.pos_x_slider.blockSignals(True)
             self.pos_y_slider.blockSignals(True)
             self.pos_x_slider.setValue(self.current_relative_x)
@@ -698,10 +719,10 @@ class MainWindow(QMainWindow):
             self.pos_y_slider.blockSignals(False)
             self._update_position_labels()
 
-        if size_changed:
+        if size_changed: # サイズ変更だけでも範囲更新
              self._update_slider_ranges()
 
-        if position_changed or size_changed:
+        if position_changed or size_changed: # 変更があれば同期
             self._update_preview_widget_info()
             self.update_position()
 
@@ -717,11 +738,17 @@ class MainWindow(QMainWindow):
             self.current_relative_y = new_rel_y
             self._update_position_labels()
             self._update_preview_widget_info()
-            self.update_position()
+            self.update_position() # 実際の位置更新
 
     def update_position(self):
-        """オーバーレイウィンドウの絶対位置計算・移動 (バグ修正適用済み)"""
-        # --- バグ修正: overlay_enabled チェック削除 ---
+        """オーバーレイの絶対位置計算・移動 (バグ修正済み)"""
+        # --- バグ修正箇所 ---
+        # overlay_enabled や image_path のチェックを削除
+        # if not self.overlay_enabled or not self.image_path or not self.overlay_window.original_pixmap:
+        #     self._update_preview_widget_info()
+        #     return
+        # --- バグ修正箇所 ここまで ---
+
         screen = self._get_selected_screen()
         if not screen: return
 
@@ -731,18 +758,16 @@ class MainWindow(QMainWindow):
         absolute_x = screen_offset.x() + self.current_relative_x
         absolute_y = screen_offset.y() + self.current_relative_y
 
-        self.overlay_window.set_overlay_position(absolute_x, absolute_y)
+        self.overlay_window.set_overlay_position(absolute_x, absolute_y) # 位置設定
 
-        # プレビューも更新しておく
-        self._update_preview_widget_info()
+        self._update_preview_widget_info() # プレビュー更新
 
 
     def closeEvent(self, event):
-        """ウィンドウクローズイベント処理 (設定保存)"""
+        """ウィンドウクローズイベント"""
+        # グローバル変数 current_theme を参照
+        global current_theme
         try:
-            # MainWindow の属性 self.config_data を更新してから保存する方が安全かもしれない
-            # self.config_data['window_x'] = self.pos().x() ... のように
-            # ただ、cf_change はファイルに直接書き込むのでこれでも動くはず
             cf_change("window_x", self.pos().x())
             cf_change("window_y", self.pos().y())
             cf_change("window_width", self.size().width())
@@ -751,30 +776,25 @@ class MainWindow(QMainWindow):
             cf_change("overlay_alpha", self.current_alpha_percent)
             cf_change("overlay_x", self.current_relative_x)
             cf_change("overlay_y", self.current_relative_y)
-            cf_change("target_monitor_name", self.target_monitor_name)
+            cf_change("target_monitor_name", self.target_monitor_name if self.target_monitor_name is not None else "")
             if self.image_path and os.path.exists(self.image_path):
                  cf_change("last_image_path", self.image_path)
             else:
                  cf_change("last_image_path", "")
-            cf_change("theme", self.current_theme)
-            # self.current_lang を保存
-            cf_change("language", self.current_lang)
+            cf_change("theme", current_theme) # グローバル変数を保存
+            # 言語設定は _change_language で保存済み
             print("設定を保存しました。")
         except Exception as e:
-             print(f"設定保存中にエラーが発生しました: {e}", file=sys.stderr)
+             print(f"設定保存エラー: {e}", file=sys.stderr)
         self.overlay_window.close()
         event.accept()
 
 # --- アプリケーション実行 ---
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app_instance = app
-    # 初期テーマ適用 (config_data は lang_loader 内でロードされる)
-    # lang_loader が保持する config_data を参照する
-    initial_theme = lang_config_data.get("theme", "dark") # lang_loader の方を参照
-    load_and_apply_theme(initial_theme)
-    # メインウィンドウ作成・表示
-    main_win = MainWindow()
-    main_win.show()
-    # イベントループ開始
-    sys.exit(app.exec())
+    app_instance = app # グローバル参照設定
+    # グローバル変数 current_theme を使用 (元の形式)
+    load_and_apply_theme(current_theme) # 初期テーマ適用
+    main_win = MainWindow() # メインウィンドウ作成
+    main_win.show()         # 表示
+    sys.exit(app.exec())    # イベントループ開始

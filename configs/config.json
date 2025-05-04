@@ -1,14 +1,14 @@
 {
     "language": "en",
-    "window_x": 100,
-    "window_y": 35,
+    "window_x": 607,
+    "window_y": 120,
     "window_width": 451,
     "window_height": 534,
-    "overlay_size": 50,
+    "overlay_size": 163,
     "overlay_alpha": 100,
-    "overlay_x": 0,
-    "overlay_y": 0,
-    "target_monitor_name": "",
-    "last_image_path": "",
+    "overlay_x": 1125,
+    "overlay_y": 302,
+    "target_monitor_name": "VG259QM",
+    "last_image_path": "F:/プログラミング/CC-ImageOverlay/CC-ImageOverlay/texture_atlas.png",
     "theme": "dark"
 }
