@@ -1,14 +1,14 @@
 {
-    "language": "English",
-    "window_x": 955,
-    "window_y": 73,
-    "window_width": 538,
-    "window_height": 648,
-    "overlay_size": 19,
+    "language": "Japanese",
+    "window_x": -1695,
+    "window_y": 58,
+    "window_width": 590,
+    "window_height": 848,
+    "overlay_size": 128,
     "overlay_alpha": 100,
-    "overlay_x": 0,
-    "overlay_y": 303,
+    "overlay_x": 341,
+    "overlay_y": 341,
     "target_monitor_name": "VG259QM",
-    "last_image_path": "C:/Users/goriu/Pictures/game/3440x1440.jpg",
+    "last_image_path": "C:/Users/goriu/Pictures/yoru.png",
     "theme": "dark"
 }

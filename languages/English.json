@@ -44,5 +44,12 @@
     "error_display_update": "Display update error: {error}",
     "error_lang_load_failed": "Error: Failed to load language data ({lang}).",
     "default_monitor": "Default Monitor",
-    "detail_settings_button": "Detail Settings"
+    "detail_settings_button": "Detail Settings",
+    "mode_image": "Image Mode",
+    "mode_memo": "Memo Mode",
+    "memo_placeholder": "Enter text here",
+    "memo_content": "Memo Content:",
+    "font_size_label": "Font Size: {value}",
+    "bg_color": "Background Color",
+    "text_color": "Text Color"
 }

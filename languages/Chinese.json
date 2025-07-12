@@ -44,5 +44,13 @@
     "error_display_update": "显示更新错误: {error}",
     "error_lang_load_failed": "错误: 语言数据({lang})加载失败。",
     "default_monitor": "默认显示器",
-    "detail_settings_button": "详细设置"
+    "detail_settings_button": "详细设置",
+
+    "mode_image": "图像模式",
+    "mode_memo": "备忘模式",
+    "memo_placeholder": "在此输入文本",
+    "memo_content": "备忘内容:",
+    "font_size_label": "字体大小: {value}",
+    "bg_color": "背景色",
+    "text_color": "文字颜色"
 }

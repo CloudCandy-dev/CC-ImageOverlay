@@ -44,5 +44,13 @@
     "error_display_update": "表示更新エラー: {error}",
     "error_lang_load_failed": "エラー: 言語データ({lang})の読み込みに失敗しました。",
     "default_monitor": "デフォルトモニター",
-    "detail_settings_button": "詳細設定"
+    "detail_settings_button": "詳細設定",
+
+    "mode_image": "画像モード",
+    "mode_memo": "メモモード",
+    "memo_placeholder": "ここにテキストを入力",
+    "memo_content": "メモ内容:",
+    "font_size_label": "フォントサイズ: {value}",
+    "bg_color": "背景色",
+    "text_color": "文字色"
 }

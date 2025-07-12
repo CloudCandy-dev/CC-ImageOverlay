@@ -1,4 +1,5 @@
 import os
+import sys
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from lib.lang_loader import get_text

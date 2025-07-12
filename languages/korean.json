@@ -44,5 +44,13 @@
     "error_display_update": "디스플레이 업데이트 오류: {error}",
     "error_lang_load_failed": "오류: 언어 데이터({lang}) 로드에 실패했습니다.",
     "default_monitor": "기본 모니터",
-    "detail_settings_button": "상세 설정"
+    "detail_settings_button": "상세 설정",
+
+    "mode_image": "이미지 모드",
+    "mode_memo": "메모 모드",
+    "memo_placeholder": "여기에 텍스트 입력",
+    "memo_content": "메모 내용:",
+    "font_size_label": "글꼴 크기: {value}",
+    "bg_color": "배경색",
+    "text_color": "글자색"
 }
