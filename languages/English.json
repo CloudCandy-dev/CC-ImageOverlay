@@ -23,22 +23,26 @@
 
     "menu_settings": "Settings(&S)",
     "action_language": "Language(&L)",
-    "lang_ja": "日本語",
-    "lang_en": "English",
-    "lang_cn": "中文",
-    "lang_kr": "한국어",
     "action_theme": "Theme(&T)",
     "theme_light": "Light",
     "theme_dark": "Dark",
     "theme_system": "Follow System",
 
     "version_title": "Version Information",
-    "version_text": "Image Overlay Controller\nVersion: 0.0.1",
+    "version_text": "CC-ImageOverlay\nVersion: 0.0.1",
     "license_title": "License Information",
     "license_text": "This software is distributed under the MIT License.\n\n(c) 2025 [CloudCandy]",
     "help_url": "https://github.com/CloudCandy-dev/CC-ImageOverlay",
     "language_change_title": "Language Changed",
     "language_change_text": "Language setting has been changed.\nSome changes will take effect after restarting the application.",
     "theme_load_error_title": "Theme Loading Error",
-    "theme_load_error_text": "Failed to load theme file '{filename}':\n{error}"
+    "theme_load_error_text": "Failed to load theme file '{filename}':\n{error}",
+    "error_qapp_not_available": "Error: QApplication instance not available (during theme loading)",
+    "warning_theme_file_not_found": "Warning: Theme file not found: {filename}",
+    "error_theme_style_application": "Error: Theme '{theme}' stylesheet application failed: {error}",
+    "warning_no_screens": "Warning: No available screens found.",
+    "error_display_update": "Display update error: {error}",
+    "error_lang_load_failed": "Error: Failed to load language data ({lang}).",
+    "default_monitor": "Default Monitor",
+    "detail_settings_button": "Detail Settings"
 }

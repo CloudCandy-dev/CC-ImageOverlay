@@ -5,62 +5,41 @@ import webbrowser
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton, QFileDialog,
     QSlider, QVBoxLayout, QHBoxLayout, QCheckBox, QGridLayout, QSizePolicy,
-    QStatusBar, QMessageBox, QComboBox
+    QStatusBar, QMessageBox, QComboBox, QFrame
 )
 from PySide6.QtGui import QPixmap, QScreen, QAction, QActionGroup, QCursor
 from PySide6.QtCore import Qt, Slot, QPoint, QSize, QRect
 # ライブラリインポート
-from lib.lang_loader import lang_load, get_text, config_data, lang_data
+from lib.lang_loader import lang_load, get_text, config_data, lang_data, get_available_languages
 from lib.cnf_loader import cf_load, cf_change
 from lib.PositionPreviewWidget import PositionPreviewWidget
+from lib.theme_manager import ThemeManager
 
-# グローバル アプリケーション参照
-app_instance = None
+class CCImageOverlay:
+    """アプリケーションのメインクラス"""
+    def __init__(self):
+        self.app = QApplication(sys.argv)
+        self.theme_manager = ThemeManager(self.app)
+        self.config = self._load_config()
+        self.lang_data = self._initialize_language()
+        self.main_window = MainWindow(self.config, self.theme_manager)
 
-# テーマ読み込み関数
-def load_and_apply_theme(theme_name):
-    """指定されたテーマのスタイルシートを読み込み適用する"""
-    global app_instance
-    if not app_instance:
-        print("エラー: QApplication インスタンスが利用できません (テーマ読み込み時)", file=sys.stderr)
-        return
+    def _load_config(self):
+        """設定読み込み"""
+        config = cf_load()
+        config.setdefault("language", "Japanese")
+        config.setdefault("theme", "system")
+        return config
 
-    qss = ""
-    if theme_name != "system":
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        theme_dir = os.path.join(script_dir, "themes")
-        qss_file = os.path.join(theme_dir, f"{theme_name}.qss")
+    def _initialize_language(self):
+        """言語初期化"""
+        return lang_load(self.config.get("language"))
 
-        if os.path.exists(qss_file):
-            try:
-                with open(qss_file, "r", encoding="utf-8") as f:
-                    qss = f.read()
-            except Exception as e:
-                # ここでは get_text が使えるか不明なので固定文字列
-                error_title = "Theme Loading Error"
-                error_text = f"Failed to load theme file '{os.path.basename(qss_file)}':\n{e}"
-                active_window = QApplication.activeWindow()
-                if active_window:
-                     QMessageBox.warning(active_window, error_title, error_text)
-                else:
-                     print(f"{error_title}\n{error_text}", file=sys.stderr)
-                qss = ""
-        else:
-            print(f"警告: テーマファイルが見つかりません: {qss_file}", file=sys.stderr)
-            qss = ""
-
-    try:
-        app_instance.setStyleSheet(qss)
-    except Exception as e:
-         print(f"エラー: テーマ '{theme_name}' スタイルシート適用エラー: {e}", file=sys.stderr)
-
-
-# 初期設定読み込み
-config_data = cf_load()
-current_lang = config_data.get("language", "ja")
-current_theme = config_data.get("theme", "system")
-lang_load(current_lang)
-
+    def run(self):
+        """アプリケーション実行"""
+        self.theme_manager.load_theme(self.config.get("theme"))
+        self.main_window.show()
+        return self.app.exec()
 
 class OverlayWindow(QLabel):
     """画像を表示するためのオーバーレイウィンドウ"""
@@ -131,10 +110,10 @@ class OverlayWindow(QLabel):
             else:
                  if self.isVisible(): self.hide()
         except Exception as e:
-             error_message = f"表示更新エラー: {e}"
+             error_message = get_text("error_display_update", error=str(e))
              if self.main_window:
                  self.main_window.statusBar().showMessage(error_message, 5000)
-             print(f"{error_message}", file=sys.stderr)
+             print(error_message, file=sys.stderr)
 
     def set_size_factor(self, factor):
         """サイズ係数設定"""
@@ -157,10 +136,11 @@ class OverlayWindow(QLabel):
 
 class MainWindow(QMainWindow):
     """メインコントロールウィンドウ"""
-    def __init__(self):
+    def __init__(self, config, theme_manager):
         """コンストラクタ"""
         super().__init__()
-        global config_data
+        self.config = config
+        self.theme_manager = theme_manager
 
         DEFAULT_WINDOW_X = 100; DEFAULT_WINDOW_Y = 100
         DEFAULT_WINDOW_WIDTH = 450; DEFAULT_WINDOW_HEIGHT = 480
@@ -169,16 +149,21 @@ class MainWindow(QMainWindow):
         DEFAULT_TARGET_MONITOR_NAME = None; DEFAULT_LAST_IMAGE = None
         DEFAULT_THEME = "system"
 
-        initial_x = config_data.get("window_x", DEFAULT_WINDOW_X)
-        initial_y = config_data.get("window_y", DEFAULT_WINDOW_Y)
-        initial_width = config_data.get("window_width", DEFAULT_WINDOW_WIDTH)
-        initial_height = config_data.get("window_height", DEFAULT_WINDOW_HEIGHT)
-        self.last_image_path = config_data.get("last_image_path", DEFAULT_LAST_IMAGE)
-        self.current_size_percent = config_data.get("overlay_size", DEFAULT_OVERLAY_SIZE)
-        self.current_alpha_percent = config_data.get("overlay_alpha", DEFAULT_OVERLAY_ALPHA)
-        self.current_relative_x = config_data.get("overlay_x", DEFAULT_OVERLAY_REL_X)
-        self.current_relative_y = config_data.get("overlay_y", DEFAULT_OVERLAY_REL_Y)
-        self.target_monitor_name = config_data.get("target_monitor_name", DEFAULT_TARGET_MONITOR_NAME)
+        # 利用可能な言語を取得
+        self.available_languages = get_available_languages()
+        if not self.available_languages:
+            self.available_languages = ["Japanese", "English"]  # フォールバック
+
+        initial_x = config.get("window_x", DEFAULT_WINDOW_X)
+        initial_y = config.get("window_y", DEFAULT_WINDOW_Y)
+        initial_width = config.get("window_width", DEFAULT_WINDOW_WIDTH)
+        initial_height = config.get("window_height", DEFAULT_WINDOW_HEIGHT)
+        self.last_image_path = config.get("last_image_path", DEFAULT_LAST_IMAGE)
+        self.current_size_percent = config.get("overlay_size", DEFAULT_OVERLAY_SIZE)
+        self.current_alpha_percent = config.get("overlay_alpha", DEFAULT_OVERLAY_ALPHA)
+        self.current_relative_x = config.get("overlay_x", DEFAULT_OVERLAY_REL_X)
+        self.current_relative_y = config.get("overlay_y", DEFAULT_OVERLAY_REL_Y)
+        self.target_monitor_name = config.get("target_monitor_name", DEFAULT_TARGET_MONITOR_NAME)
         self.overlay_enabled = False
         self.image_path = None
 
@@ -197,7 +182,6 @@ class MainWindow(QMainWindow):
 
     def _create_actions(self):
         """アクション作成"""
-        global current_lang, current_theme
         self.exit_action = QAction(self)
         self.exit_action.triggered.connect(self.close)
         self.help_action = QAction(self)
@@ -210,18 +194,16 @@ class MainWindow(QMainWindow):
         self.lang_group = QActionGroup(self)
         self.lang_group.setExclusive(True)
         self.lang_group.triggered.connect(self._change_language)
-        self.lang_ja_action = QAction("", self, checkable=True, data="ja")
-        if current_lang == "ja": self.lang_ja_action.setChecked(True)
-        self.lang_group.addAction(self.lang_ja_action)
-        self.lang_en_action = QAction("", self, checkable=True, data="en")
-        if current_lang == "en": self.lang_en_action.setChecked(True)
-        self.lang_group.addAction(self.lang_en_action)
-        self.lang_cn_action = QAction("", self, checkable=True, data="cn")
-        if current_lang == "cn": self.lang_cn_action.setChecked(True)
-        self.lang_group.addAction(self.lang_cn_action)
-        self.lang_kr_action = QAction("", self, checkable=True, data="kr")
-        if current_lang == "kr": self.lang_kr_action.setChecked(True)
-        self.lang_group.addAction(self.lang_kr_action)
+        
+        # 言語アクションを動的に作成
+        current_lang = self.config.get("language")  # configから取得
+        self.lang_actions = {}
+        for lang_name in self.available_languages:
+            action = QAction("", self, checkable=True, data=lang_name)
+            if current_lang == lang_name:
+                action.setChecked(True)
+            self.lang_group.addAction(action)
+            self.lang_actions[lang_name] = action
 
         self.theme_group = QActionGroup(self)
         self.theme_group.setExclusive(True)
@@ -229,6 +211,8 @@ class MainWindow(QMainWindow):
         self.theme_light_action = QAction("", self, checkable=True, data="light")
         self.theme_dark_action = QAction("", self, checkable=True, data="dark")
         self.theme_system_action = QAction("", self, checkable=True, data="system")
+        
+        current_theme = self.config.get("theme")  # configから取得
         if current_theme == "light": self.theme_light_action.setChecked(True)
         elif current_theme == "dark": self.theme_dark_action.setChecked(True)
         else: self.theme_system_action.setChecked(True)
@@ -250,10 +234,9 @@ class MainWindow(QMainWindow):
         self.info_menu.addSeparator()
         self.info_menu.addAction(self.version_action)
         self.info_menu.addAction(self.license_action)
-        self.language_menu.addAction(self.lang_ja_action)
-        self.language_menu.addAction(self.lang_en_action)
-        self.language_menu.addAction(self.lang_cn_action)
-        self.language_menu.addAction(self.lang_kr_action)
+        # 言語メニューに動的に追加
+        for lang_name in self.available_languages:
+            self.language_menu.addAction(self.lang_actions[lang_name])
         self.theme_menu.addAction(self.theme_light_action)
         self.theme_menu.addAction(self.theme_dark_action)
         self.theme_menu.addAction(self.theme_system_action)
@@ -269,6 +252,17 @@ class MainWindow(QMainWindow):
         self.monitor_label = QLabel()
         self.monitor_combo = QComboBox()
         self._populate_monitor_combo()
+
+        # 詳細設定セクション作成
+        self.detail_frame = QFrame()
+        self.detail_frame.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
+        self.detail_frame.setContentsMargins(2, 2, 2, 2)  # Reduce frame margins
+        self.detail_button = QPushButton()
+        self.detail_button.setCheckable(True)
+        self.detail_button.setChecked(False)
+        self.detail_frame.setVisible(False)
+
+        # 詳細設定内のウィジェット
         self.position_preview = PositionPreviewWidget()
         self.pos_x_slider = QSlider(Qt.Orientation.Horizontal)
         self.pos_x_slider.setValue(self.current_relative_x)
@@ -288,8 +282,12 @@ class MainWindow(QMainWindow):
     def _setup_layout(self):
         """レイアウト設定"""
         main_layout = QVBoxLayout()
+        main_layout.setSpacing(4)  # メインレイアウトの間隔を設定
         self.control_layout_widget = QWidget()
         control_layout = QGridLayout(self.control_layout_widget)
+        control_layout.setVerticalSpacing(4)  # 縦方向の間隔を固定
+        
+        # メインコントロール
         row = 0
         control_layout.addWidget(self.select_button, row, 0)
         control_layout.addWidget(self.path_label, row, 1, 1, 2)
@@ -304,16 +302,29 @@ class MainWindow(QMainWindow):
         row += 1
         control_layout.addWidget(self.position_preview, row, 0, 1, 3)
         row += 1
-        control_layout.addWidget(self.pos_x_label, row, 0)
-        control_layout.addWidget(self.pos_x_slider, row, 1, 1, 2)
-        row += 1
-        control_layout.addWidget(self.pos_y_label, row, 0)
-        control_layout.addWidget(self.pos_y_slider, row, 1, 1, 2)
-        row += 1
-        control_layout.addWidget(self.size_label, row, 0)
-        control_layout.addWidget(self.size_slider, row, 1, 1, 2)
+        control_layout.addWidget(self.detail_button, row, 0, 1, 3)
 
-        main_layout.addWidget(self.control_layout_widget)
+        # 詳細設定レイアウト
+        detail_layout = QGridLayout(self.detail_frame)
+        detail_layout.setVerticalSpacing(4)  # 縦方向の間隔を固定
+        self.detail_frame.setFixedHeight(120)  # 詳細フレームの高さを固定
+
+        row = 0
+        detail_layout.addWidget(self.pos_x_label, row, 0)
+        detail_layout.addWidget(self.pos_x_slider, row, 1, 1, 2)
+        row += 1
+        detail_layout.addWidget(self.pos_y_label, row, 0)
+        detail_layout.addWidget(self.pos_y_slider, row, 1, 1, 2)
+        row += 1
+        detail_layout.addWidget(self.size_label, row, 0)
+        detail_layout.addWidget(self.size_slider, row, 1, 1, 2)
+
+        # メインレイアウトに追加
+        main_widget = QWidget()
+        main_widget.setLayout(control_layout)
+        main_layout.addWidget(main_widget)
+        main_layout.addWidget(self.detail_frame)
+
         central_widget = QWidget()
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
@@ -328,6 +339,12 @@ class MainWindow(QMainWindow):
         self.position_preview.overlayGeometryChanged.connect(self._update_controls_from_preview_geom)
         self.pos_x_slider.valueChanged.connect(self._update_position_from_sliders)
         self.pos_y_slider.valueChanged.connect(self._update_position_from_sliders)
+        # 詳細ボタンの接続を追加
+        self.detail_button.toggled.connect(self._toggle_detail_frame)
+
+    def _toggle_detail_frame(self, checked):
+        """詳細設定の表示/非表示を切り替え"""
+        self.detail_frame.setVisible(checked)
 
     def _initialize_ui_state(self):
         """UI初期状態設定"""
@@ -374,10 +391,10 @@ class MainWindow(QMainWindow):
         self.monitor_combo.blockSignals(True)
         self.monitor_combo.clear()
         if not self.screens:
-             self.monitor_combo.addItem("Default Monitor", userData=None)
+             self.monitor_combo.addItem(get_text("default_monitor"), userData=None)
              self.target_monitor_name = None
              self.monitor_combo.blockSignals(False)
-             print("警告: 利用可能なスクリーンが見つかりません。", file=sys.stderr)
+             print(get_text("warning_no_screens"), file=sys.stderr)
              return
         for i, screen in enumerate(self.screens):
             screen_name = screen.name()
@@ -478,12 +495,9 @@ class MainWindow(QMainWindow):
         self.license_action.setText(get_text("action_license"))
         self.settings_menu.setTitle(get_text("menu_settings"))
         self.language_menu.setTitle(get_text("action_language"))
-        for action in self.lang_group.actions():
-            lang_code = action.data()
-            if lang_code == "ja": action.setText(get_text("lang_ja"))
-            elif lang_code == "en": action.setText(get_text("lang_en"))
-            elif lang_code == "cn": action.setText(get_text("lang_cn"))
-            elif lang_code == "kr": action.setText(get_text("lang_kr"))
+        # 言語メニューアイテムの翻訳 - 言語名をそのまま表示
+        for lang_name, action in self.lang_actions.items():
+            action.setText(lang_name)
         self.theme_menu.setTitle(get_text("action_theme"))
         for action in self.theme_group.actions():
             theme_name = action.data()
@@ -500,6 +514,8 @@ class MainWindow(QMainWindow):
         self.monitor_label.setText(get_text("monitor_label"))
         self.size_label.setText(get_text("size_label", value=self.current_size_percent))
         self.alpha_label.setText(get_text("alpha_label", value=self.current_alpha_percent))
+        # 詳細ボタンのテキスト設定を追加
+        self.detail_button.setText(get_text("detail_settings_button"))
         self._update_position_labels()
 
     @Slot()
@@ -539,16 +555,15 @@ class MainWindow(QMainWindow):
     @Slot(QAction)
     def _change_language(self, action):
         """言語変更処理"""
-        global current_lang, lang_data
         new_lang = action.data()
+        current_lang = self.config.get("language")  # configから取得
         if new_lang and new_lang != current_lang:
             cf_change("language", new_lang)
-            current_lang = new_lang
-            lang_data = lang_load(current_lang)
+            self.config["language"] = new_lang  # configを更新
+            lang_data = lang_load(new_lang)
             if lang_data is None:
                 lang_data = {}
-                # エラーメッセージはコンソールへ
-                print(f"エラー: 言語データ({new_lang})の読み込みに失敗しました。", file=sys.stderr)
+                print(get_text("error_lang_load_failed", lang=new_lang), file=sys.stderr)
             self._retranslate_ui()
             self._populate_monitor_combo()
             # 言語変更メッセージ表示
@@ -559,12 +574,12 @@ class MainWindow(QMainWindow):
     @Slot(QAction)
     def _change_theme(self, action):
         """テーマ変更処理"""
-        global current_theme
         new_theme = action.data()
+        current_theme = self.config.get("theme")  # configから取得
         if new_theme and new_theme != current_theme:
-            current_theme = new_theme
+            self.config["theme"] = new_theme  # configを更新
             cf_change("theme", new_theme)
-            load_and_apply_theme(new_theme)
+            self.theme_manager.load_theme(new_theme)  # theme_managerを使用
 
     def set_controls_enabled(self, enabled):
         """画像依存コントロール有効/無効化"""
@@ -596,6 +611,8 @@ class MainWindow(QMainWindow):
                 # 設定適用 -> 表示更新 -> スライダー/プレビュー更新 -> 位置更新
                 self._update_state_from_size_slider(self.current_size_percent)
                 self._update_state_from_alpha_slider(self.current_alpha_percent)
+                # 画像更新を強制
+                self.overlay_window.update_display()  # 追加: 画像の表示を更新
                 # update_position は上記処理内で呼ばれる
 
                 # チェックボックス状態に合わせて表示
@@ -767,9 +784,5 @@ class MainWindow(QMainWindow):
 
 # --- アプリケーション実行 ---
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app_instance = app
-    load_and_apply_theme(current_theme) # グローバル変数 current_theme を使用
-    main_win = MainWindow()
-    main_win.show()
-    sys.exit(app.exec())
+    app = CCImageOverlay()
+    sys.exit(app.run())

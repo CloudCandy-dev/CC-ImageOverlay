@@ -23,22 +23,26 @@
 
     "menu_settings": "設定(&S)",
     "action_language": "言語(&L)",
-    "lang_ja": "日本語",
-    "lang_en": "English",
-    "lang_cn": "中文",
-    "lang_kr": "한국어",
     "action_theme": "テーマ(&T)",
     "theme_light": "ライト",
     "theme_dark": "ダーク",
     "theme_system": "システムに従う",
 
     "version_title": "バージョン情報",
-    "version_text": "画像オーバーレイ コントローラー\nバージョン: 0.0.1",
+    "version_text": "CC-ImageOverlay\nVersion: 0.0.1",
     "license_title": "ライセンス情報",
     "license_text": "このソフトウェアは MIT ライセンスの下で配布されています。\n\n(c) 2025 [CloudCandy]",
     "help_url": "https://github.com/CloudCandy-dev/CC-ImageOverlay",
     "language_change_title": "言語変更",
     "language_change_text": "言語設定を変更しました。\n一部の変更はアプリケーションの再起動後に反映されます。",
     "theme_load_error_title": "テーマ読込エラー",
-    "theme_load_error_text": "テーマファイル '{filename}' の読み込みに失敗しました:\n{error}"
+    "theme_load_error_text": "テーマファイル '{filename}' の読み込みに失敗しました:\n{error}",
+    "error_qapp_not_available": "エラー: QApplication インスタンスが利用できません (テーマ読み込み時)",
+    "warning_theme_file_not_found": "警告: テーマファイルが見つかりません: {filename}",
+    "error_theme_style_application": "エラー: テーマ '{theme}' スタイルシート適用エラー: {error}",
+    "warning_no_screens": "警告: 利用可能なスクリーンが見つかりません。",
+    "error_display_update": "表示更新エラー: {error}",
+    "error_lang_load_failed": "エラー: 言語データ({lang})の読み込みに失敗しました。",
+    "default_monitor": "デフォルトモニター",
+    "detail_settings_button": "詳細設定"
 }

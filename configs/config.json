@@ -1,14 +1,14 @@
 {
-    "language": "en",
-    "window_x": 100,
-    "window_y": 35,
-    "window_width": 451,
-    "window_height": 534,
-    "overlay_size": 50,
+    "language": "English",
+    "window_x": 955,
+    "window_y": 104,
+    "window_width": 538,
+    "window_height": 648,
+    "overlay_size": 19,
     "overlay_alpha": 100,
     "overlay_x": 0,
-    "overlay_y": 0,
-    "target_monitor_name": "",
-    "last_image_path": "",
+    "overlay_y": 303,
+    "target_monitor_name": "VG259QM",
+    "last_image_path": "C:/Users/goriu/Pictures/game/3440x1440.jpg",
     "theme": "dark"
 }
