@@ -634,7 +634,6 @@ class MainWindow(QMainWindow):
         is_image_loaded = self.image_path is not None and self.overlay_window.original_pixmap is not None
 
         if self.overlay_enabled and is_image_loaded:
-            # 以前の冗長な呼び出しを削除済み
             self.overlay_window.show()
         else:
             self.overlay_window.hide()
@@ -663,13 +662,6 @@ class MainWindow(QMainWindow):
         """プレビューウィジェット変更処理 (修正版)"""
         # プレビューウィジェット自体が無効なら処理しない
         if not self.position_preview.isEnabled(): return
-
-        # --- 修正箇所: overlay_enabled チェック削除 ---
-        # プレビューの操作は常に内部状態に反映させる
-        # if not self.overlay_enabled or not self.image_path or not self.overlay_window.original_pixmap:
-        #    self._update_preview_widget_info()
-        #    return
-        # --- 修正箇所 ここまで ---
 
         # 画像がロードされていない場合はプレビュー操作を反映しない
         # (プレビューウィジェット自体は有効でも、内部状態は更新しない)
@@ -736,8 +728,7 @@ class MainWindow(QMainWindow):
             self.update_position()
 
     def update_position(self):
-        """オーバーレイの絶対位置計算・移動 (修正版)"""
-        # --- バグ修正箇所: overlay_enabled チェック削除 ---
+        """オーバーレイの絶対位置計算・移動"""
         screen = self._get_selected_screen()
         if not screen: return
 
@@ -770,15 +761,9 @@ class MainWindow(QMainWindow):
                  cf_change("last_image_path", "")
             cf_change("theme", current_theme)
             cf_change("language", current_lang)
-            # --- エラーメッセージ修正 ---
-            # print("設定を保存しました。") # 日本語直書きではなくキーを使う (キーは仮定)
             print(get_text("info_settings_saved", default="Settings saved."))
-            # --- エラーメッセージ修正 ここまで ---
         except Exception as e:
-             # --- エラーメッセージ修正 ---
-             # print(f"設定保存エラー: {e}", file=sys.stderr) # 日本語直書きではなくキーを使う (キーは仮定)
              print(get_text("error_saving_settings", error=e, default=f"Error saving settings: {e}"), file=sys.stderr)
-             # --- エラーメッセージ修正 ここまで ---
         self.overlay_window.close()
         event.accept()
 
