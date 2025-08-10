@@ -6,16 +6,16 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton, QFileDialog,
     QSlider, QVBoxLayout, QHBoxLayout, QCheckBox, QGridLayout, QSizePolicy,
     QStatusBar, QMessageBox, QComboBox, QFrame, QRadioButton, QTextEdit,
-    QColorDialog, QButtonGroup  # QButtonGroup を追加
+    QColorDialog, QButtonGroup
 )
-from PySide6.QtGui import QPixmap, QScreen, QAction, QActionGroup, QCursor
-from PySide6.QtCore import Qt, Slot, QPoint, QSize, QRect
+from PySide6.QtGui import QScreen, QAction, QActionGroup
+from PySide6.QtCore import Qt, Slot, QPoint
 # ライブラリインポート
 from lib.lang_loader import lang_load, get_text, config_data, lang_data, get_available_languages
 from lib.cnf_loader import cf_load, cf_change
 from lib.PositionPreviewWidget import PositionPreviewWidget
 from lib.theme_manager import ThemeManager
-from lib.memo_overlay_window import MemoOverlayWindow  # 追加
+from lib.overlay_windows import ImageOverlayWindow, MemoOverlayWindow
 
 class CCImageOverlay:
     """アプリケーションのメインクラス"""
@@ -42,99 +42,6 @@ class CCImageOverlay:
         self.theme_manager.load_theme(self.config.get("theme"))
         self.main_window.show()
         return self.app.exec()
-
-class OverlayWindow(QLabel):
-    """画像を表示するためのオーバーレイウィンドウ"""
-    def __init__(self, parent=None):
-        """コンストラクタ"""
-        super().__init__(parent)
-        self.main_window = parent
-        self.original_pixmap = None
-        self.current_pixmap = None
-        self.size_factor = 1.0
-        self.alpha_level = 1.0
-
-        self.setWindowFlags(
-            Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.Tool |
-            Qt.WindowType.WindowTransparentForInput
-        )
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-    def set_image(self, image_path):
-        """画像を読み込む"""
-        if image_path and os.path.exists(image_path):
-            self.original_pixmap = QPixmap(image_path)
-            if self.original_pixmap.isNull():
-                if self.main_window:
-                    status_text = get_text("error_loading_image_failed", image_path=os.path.basename(image_path))
-                    self.main_window.statusBar().showMessage(status_text, 5000)
-                self.original_pixmap = None
-                self.clear()
-            else:
-                if self.main_window:
-                     status_text = get_text("status_image_loaded", filename=os.path.basename(image_path))
-                     self.main_window.statusBar().showMessage(status_text, 3000)
-        else:
-            self.original_pixmap = None
-            self.clear()
-
-    def update_display(self):
-        """表示内容を更新する"""
-        if not self.original_pixmap:
-            self.clear()
-            self.hide()
-            return
-        try:
-            current_factor = self.size_factor
-            orig_w = self.original_pixmap.width()
-            orig_h = self.original_pixmap.height()
-            scaled_width = max(1, int(round(orig_w * current_factor)))
-            scaled_height = max(1, int(round(orig_h * current_factor)))
-            new_size = QSize(scaled_width, scaled_height)
-
-            if self.current_pixmap is None or self.current_pixmap.size() != new_size:
-                self.current_pixmap = self.original_pixmap.scaled(
-                    new_size,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
-                )
-                self.setPixmap(self.current_pixmap)
-
-            self.setFixedSize(new_size)
-            self.setWindowOpacity(self.alpha_level)
-
-            if self.main_window and self.main_window.overlay_enabled:
-                 if not self.isVisible(): self.show()
-            else:
-                 if self.isVisible(): self.hide()
-        except Exception as e:
-             error_message = get_text("error_display_update", error=str(e))
-             if self.main_window:
-                 self.main_window.statusBar().showMessage(error_message, 5000)
-             print(error_message, file=sys.stderr)
-
-    def set_size_factor(self, factor):
-        """サイズ係数設定"""
-        new_factor = max(0.01, factor)
-        if abs(self.size_factor - new_factor) > 1e-6:
-             self.size_factor = new_factor
-             self.update_display()
-
-    def set_alpha(self, alpha_percent):
-        """透明度設定"""
-        new_alpha_level = max(0.0, min(1.0, alpha_percent / 100.0))
-        if abs(self.alpha_level - new_alpha_level) > 1e-6:
-            self.alpha_level = new_alpha_level
-            self.setWindowOpacity(self.alpha_level)
-
-    def set_overlay_position(self, x, y):
-        """オーバーレイ位置設定"""
-        self.move(x, y)
-
 
 class MainWindow(QMainWindow):
     """メインコントロールウィンドウ"""
@@ -172,7 +79,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(initial_x, initial_y, initial_width, initial_height)
         self.setStatusBar(QStatusBar())
         self.screens = QApplication.screens()
-        self.overlay_window = OverlayWindow(self)
+        self.overlay_window = ImageOverlayWindow(self)  # クラス名を変更
         self.memo_window = MemoOverlayWindow(self)
         self.current_mode = "image"  # デフォルトは画像モード
 
@@ -290,18 +197,15 @@ class MainWindow(QMainWindow):
         self.pos_x_slider = QSlider(Qt.Orientation.Horizontal)
         self.pos_x_slider.setValue(self.current_relative_x)
         self.pos_x_label = QLabel()
-        self.pos_x_label.setFixedHeight(20)  # 高さを固定
         
         self.pos_y_slider = QSlider(Qt.Orientation.Horizontal)
         self.pos_y_slider.setValue(self.current_relative_y)
         self.pos_y_label = QLabel()
-        self.pos_y_label.setFixedHeight(20)  # 高さを固定
         
         self.size_slider = QSlider(Qt.Orientation.Horizontal)
         self.size_slider.setRange(10, 300)
         self.size_slider.setValue(self.current_size_percent)
         self.size_label = QLabel()
-        self.size_label.setFixedHeight(20)  # 高さを固定
 
         self.alpha_slider = QSlider(Qt.Orientation.Horizontal)
         self.alpha_slider.setRange(0, 100)
@@ -325,6 +229,18 @@ class MainWindow(QMainWindow):
         memo_layout.addWidget(QLabel(get_text("memo_content")), 0, 0)
         memo_layout.addWidget(self.memo_edit, 1, 0)
         self.memo_widgets.setVisible(False)
+
+        # 詳細設定のラベルとスライダーの高さを固定
+        self.pos_x_label.setFixedHeight(20)
+        self.pos_y_label.setFixedHeight(20)
+        self.size_label.setFixedHeight(20)
+        self.pos_x_slider.setFixedHeight(20)
+        self.pos_y_slider.setFixedHeight(20)
+        self.size_slider.setFixedHeight(20)
+
+        # メモエディタのサイズを固定
+        self.memo_edit.setFixedHeight(120)
+        self.memo_edit.setFixedWidth(300)
 
     def _setup_layout(self):
         """レイアウト設定"""
@@ -361,7 +277,14 @@ class MainWindow(QMainWindow):
 
         # 詳細設定レイアウト
         detail_layout = QGridLayout()
-        detail_layout.setVerticalSpacing(4)
+        detail_layout.setVerticalSpacing(2)  # 垂直間隔を2ピクセルに固定
+        detail_layout.setContentsMargins(4, 4, 4, 4)  # マージンを4ピクセルに固定
+
+        # スライダーとラベルの高さを固定
+        for widget in [self.pos_x_label, self.pos_y_label, self.size_label,
+                      self.pos_x_slider, self.pos_y_slider, self.size_slider]:
+            widget.setFixedHeight(20)
+
         row = 0
         detail_layout.addWidget(self.pos_x_label, row, 0)
         detail_layout.addWidget(self.pos_x_slider, row, 1, 1, 2)
@@ -371,6 +294,12 @@ class MainWindow(QMainWindow):
         row += 1
         detail_layout.addWidget(self.size_label, row, 0)
         detail_layout.addWidget(self.size_slider, row, 1, 1, 2)
+
+        # 色設定ボタンは初期状態で非表示
+        self.bg_color_button.setVisible(False)
+        self.text_color_button.setVisible(False)
+
+        # モードに応じて表示/非表示を切り替えるため、詳細設定に追加
         row += 1
         detail_layout.addWidget(self.bg_color_button, row, 0)
         detail_layout.addWidget(self.text_color_button, row, 1)
@@ -564,12 +493,11 @@ class MainWindow(QMainWindow):
             return
             
         self.current_size_percent = value
-        self.size_label.setText(get_text("size_label", value=value))
-        
         if self.current_mode == "image":
+            self.size_label.setText(get_text("size_label", value=value))
             self.overlay_window.set_size_factor(value / 100.0)
         else:  # memo mode
-            self._update_memo_window_size()
+            self.size_label.setText(get_text("font_size_label", value=value))
             self.memo_window.set_font_size(value)
         
         self._update_slider_ranges()
@@ -813,12 +741,18 @@ class MainWindow(QMainWindow):
     def toggle_overlay(self, state):
         """表示チェックボックス状態変更処理 (修正版)"""
         self.overlay_enabled = (state == Qt.CheckState.Checked.value)
-        is_image_loaded = self.image_path is not None and self.overlay_window.original_pixmap is not None
-
-        if self.overlay_enabled and is_image_loaded:
-            self.overlay_window.show()
+        
+        if self.overlay_enabled:
+            if self.current_mode == "image":
+                if self.image_path and self.overlay_window.original_pixmap:
+                    self.memo_window.hide()
+                    self.overlay_window.show()
+            else:  # memo mode
+                self.overlay_window.hide()
+                self.memo_window.show()
         else:
             self.overlay_window.hide()
+            self.memo_window.hide()
 
     @Slot(int)
     def _update_state_from_size_slider(self, value):
@@ -827,12 +761,11 @@ class MainWindow(QMainWindow):
             return
             
         self.current_size_percent = value
-        self.size_label.setText(get_text("size_label", value=value))
-        
         if self.current_mode == "image":
+            self.size_label.setText(get_text("size_label", value=value))
             self.overlay_window.set_size_factor(value / 100.0)
         else:  # memo mode
-            self._update_memo_window_size()
+            self.size_label.setText(get_text("font_size_label", value=value))
             self.memo_window.set_font_size(value)
         
         self._update_slider_ranges()
@@ -938,58 +871,134 @@ class MainWindow(QMainWindow):
         if not checked:
             return
         
-        if self.image_radio.isChecked():
-            self.current_mode = "image"
-            self.select_button.setVisible(True)
-            self.path_label.setVisible(True)
-            self.position_preview.setVisible(True)
-            self.memo_widgets.setVisible(False)
-            if self.overlay_enabled:
-                self.memo_window.hide()
-                if self.image_path and self.overlay_window.original_pixmap:
-                    self.overlay_window.show()
-        else:
-            self.current_mode = "memo"
-            self.select_button.setVisible(False)
-            self.path_label.setVisible(False)
-            self.position_preview.setVisible(True)
-            self.memo_widgets.setVisible(True)
-            if self.overlay_enabled:
-                self.overlay_window.hide()
-                self.memo_window.show()
-
-    def toggle_overlay(self, state):
-        """表示チェックボックス状態変更処理"""
-        self.overlay_enabled = (state == Qt.CheckState.Checked.value)
+        is_image_mode = self.image_radio.isChecked()
+        self.current_mode = "image" if is_image_mode else "memo"
         
-        if self.overlay_enabled:
-            if self.current_mode == "image":
-                if self.image_path and self.overlay_window.original_pixmap:
-                    self.overlay_window.show()
-                    self.memo_window.hide()
-            else:  # memo mode
-                self.overlay_window.hide()
-                self.memo_window.show()
+        # サイズスライダーの値を保存
+        self._save_current_size()
+        
+        # ウィジェットの表示状態を更新
+        self._update_mode_widgets(is_image_mode)
+        # オーバーレイウィンドウの表示状態を更新
+        self._update_overlay_visibility()
+        
+        # モードに応じたサイズを復元
+        self._restore_saved_size()
+
+    def _save_current_size(self):
+        """現在のサイズを保存"""
+        if not hasattr(self, '_last_mode'):
+            self._last_mode = "image"
+            self._saved_image_size = 100
+            self._saved_memo_size = 12
+            return
+            
+        if self._last_mode != self.current_mode:
+            if self._last_mode == "image":
+                self._saved_image_size = self.current_size_percent
+            else:
+                self._saved_memo_size = self.current_size_percent
+
+    def _restore_saved_size(self):
+        """保存されたサイズを復元"""
+        if not hasattr(self, '_saved_image_size'):
+            self._saved_image_size = 100
+        if not hasattr(self, '_saved_memo_size'):
+            self._saved_memo_size = 12
+
+        # モードに応じたサイズを設定
+        self.current_size_percent = (
+            self._saved_image_size if self.current_mode == "image" 
+            else self._saved_memo_size
+        )
+        
+        # サイズスライダーを更新
+        self.size_slider.setValue(self.current_size_percent)
+        
+        # モードに応じたラベルを更新
+        label_text = (
+            get_text("size_label", value=self.current_size_percent)
+            if self.current_mode == "image"
+            else get_text("font_size_label", value=self.current_size_percent)
+        )
+        self.size_label.setText(label_text)
+        
+        # モード変更を記録
+        self._last_mode = self.current_mode
+
+    def _update_mode_widgets(self, is_image_mode):
+        """モードに応じたウィジェット表示状態を更新"""
+        self.select_button.setVisible(is_image_mode)
+        self.path_label.setVisible(is_image_mode)
+        self.memo_widgets.setVisible(not is_image_mode)
+        self.bg_color_button.setVisible(not is_image_mode)
+        self.text_color_button.setVisible(not is_image_mode)
+        
+        # サイズスライダーのラベルを更新
+        if is_image_mode:
+            self.size_label.setText(get_text("size_label", value=self.current_size_percent))
         else:
+            self.size_label.setText(get_text("font_size_label", value=self.current_size_percent))
+
+    def _update_overlay_visibility(self):
+        """オーバーレイウィンドウの表示状態を更新"""
+        if not self.overlay_enabled:
             self.overlay_window.hide()
             self.memo_window.hide()
-
-    def update_position(self):
-        """オーバーレイの絶対位置計算・移動"""
-        screen = self._get_selected_screen()
-        if not screen: return
-
-        screen_geom = screen.availableGeometry()
-        screen_offset = screen_geom.topLeft()
-
-        absolute_x = screen_offset.x() + self.current_relative_x
-        absolute_y = screen_offset.y() + self.current_relative_y
+            return
 
         if self.current_mode == "image":
-            self.overlay_window.set_overlay_position(absolute_x, absolute_y)
-        else:  # memo mode
-            self.memo_window.set_position(absolute_x, absolute_y)
-            
+            self.memo_window.hide()
+            if self.image_path and self.overlay_window.original_pixmap:
+                self.overlay_window.show()
+                self._update_overlay_window()
+        else:
+            self.overlay_window.hide()
+            self.memo_window.show()
+            self._update_memo_window()
+
+    def _update_overlay_window(self):
+        """画像オーバーレイウィンドウの状態を更新"""
+        self.overlay_window.set_size_factor(self.current_size_percent / 100.0)
+        self.overlay_window.set_alpha(self.current_alpha_percent)
+        self._update_window_position(self.overlay_window)
+
+    def _update_memo_window(self):
+        """メモオーバーレイウィンドウの状態を更新"""
+        width, height = self._get_current_overlay_actual_size()
+        self.memo_window.set_size(width, height)
+        self.memo_window.set_alpha(self.current_alpha_percent)
+        
+        # フォントサイズを更新
+        font_size = max(8, min(72, int(self.current_size_percent / 2)))  # サイズを適切な範囲に調整
+        self.memo_window.set_font_size(font_size)
+        
+        # テキストを更新（ウィンドウサイズに合わせて調整される）
+        self.memo_window.set_text(self.memo_edit.toPlainText())
+        
+        self._update_window_position(self.memo_window)
+
+    def _update_window_position(self, window):
+        """ウィンドウ位置を更新"""
+        screen = self._get_selected_screen()
+        if screen:
+            screen_geom = screen.availableGeometry()
+            absolute_x = screen_geom.x() + self.current_relative_x
+            absolute_y = screen_geom.y() + self.current_relative_y
+            if isinstance(window, ImageOverlayWindow):
+                window.set_overlay_position(absolute_x, absolute_y)  # ImageOverlayWindow用
+            else:
+                window.set_position(absolute_x, absolute_y)  # MemoOverlayWindow用
+
+    # 既存のupdateメソッドを置き換え
+    def update_position(self):
+        """全てのオーバーレイウィンドウの位置を更新"""
+        if self.current_mode == "image":
+            if self.overlay_window.isVisible():
+                self._update_window_position(self.overlay_window)
+        else:
+            if self.memo_window.isVisible():
+                self._update_window_position(self.memo_window)
         self._update_preview_widget_info()
 
     def _update_position_labels(self):
