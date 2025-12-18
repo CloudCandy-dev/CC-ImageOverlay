@@ -12,6 +12,13 @@ CC-ImageOverlayは、デスクトップ上に画像やテキストメモを半�
 - **リッチなUI**: グラスモーフィズム（すりガラス）デザインとモダンなアニメーション
 - **多言語対応**: 日本語、英語、中国語、韓国語に対応
 
+
+## インストール方法
+[インストール先](https://github.com/CloudCandy-dev/CC-ImageOverlay/releases/tag/3.0.0)
+インストール版は「CC-ImageOverlay_Setup_version.exe」をダウンロードし、インストールしてください。
+ポータブル版は「portable.zip」をダウンロードし、解凍してください。
+
+
 ## 動作環境
 - Windows 10 / 11
 - .NET 10 Runtime (自己完結版を使用する場合は不要)
