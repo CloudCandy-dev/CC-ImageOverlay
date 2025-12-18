@@ -1,6 +1,0 @@
-F:\プログラミング\CC-ImageOverlay\src\CC.ImageOverlay\Publish\CC.ImageOverlay.pdb
-F:\プログラミング\CC-ImageOverlay\src\CC.ImageOverlay\Publish\Languages\Chinese_v2.json
-F:\プログラミング\CC-ImageOverlay\src\CC.ImageOverlay\Publish\Languages\English_v2.json
-F:\プログラミング\CC-ImageOverlay\src\CC.ImageOverlay\Publish\Languages\Japanese_v2.json
-F:\プログラミング\CC-ImageOverlay\src\CC.ImageOverlay\Publish\Languages\Korean_v2.json
-F:\プログラミング\CC-ImageOverlay\src\CC.ImageOverlay\Publish\CC.ImageOverlay.exe
