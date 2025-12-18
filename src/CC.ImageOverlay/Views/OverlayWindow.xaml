@@ -1,0 +1,36 @@
+<Window x:Class="CC.ImageOverlay.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Overlay"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        ShowActivated="False">
+    
+    <Grid>
+        <!-- Image Overlay -->
+        <Image x:Name="OverlayImage"
+               Stretch="Uniform"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Top"/>
+        
+        <!-- Memo Text Overlay -->
+        <Border x:Name="MemoContainer"
+                Visibility="Collapsed"
+                Background="#C8000000"
+                CornerRadius="8"
+                Padding="16"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top">
+            <TextBlock x:Name="MemoText"
+                       Foreground="White"
+                       FontSize="14"
+                       FontFamily="Noto Sans JP"
+                       TextWrapping="Wrap"
+                       MaxWidth="400"/>
+        </Border>
+    </Grid>
+</Window>

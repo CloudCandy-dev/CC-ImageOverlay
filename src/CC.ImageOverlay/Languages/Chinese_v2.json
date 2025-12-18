@@ -1,0 +1,374 @@
+{
+  "meta": {
+    "language_code": "zh",
+    "language_name": "中文",
+    "version": "3.0.0",
+    "author": "CloudCandy",
+    "last_updated": "2025-12-19"
+  },
+  "application": {
+    "title": "CC-ImageOverlay",
+    "version": "版本 {version}",
+    "description": "图像覆盖工具"
+  },
+  "menus": {
+    "file": {
+      "label": "文件(&F)",
+      "new_overlay": "新建覆盖层(&N)",
+      "open_image": "打开图像(&O)...",
+      "recent_images": "最近使用的图像(&R)",
+      "save_session": "保存会话(&S)",
+      "load_session": "加载会话(&L)...",
+      "separator": "---",
+      "exit": "退出(&X)"
+    },
+    "edit": {
+      "label": "编辑(&E)",
+      "copy": "复制(&C)",
+      "paste": "粘贴(&P)",
+      "delete": "删除(&D)",
+      "select_all": "全选(&A)",
+      "separator": "---",
+      "preferences": "首选项(&P)..."
+    },
+    "view": {
+      "label": "查看(&V)",
+      "show_all_overlays": "显示所有覆盖层(&S)",
+      "hide_all_overlays": "隐藏所有覆盖层(&H)",
+      "toggle_overlay_borders": "切换覆盖层边框(&B)",
+      "separator": "---",
+      "fullscreen": "全屏(&F)",
+      "zoom_in": "放大(&I)",
+      "zoom_out": "缩小(&O)",
+      "zoom_reset": "重置缩放(&R)"
+    },
+    "tools": {
+      "label": "工具(&T)",
+      "image_manager": "图像管理器(&I)...",
+      "overlay_manager": "覆盖层管理器(&O)...",
+      "hotkey_settings": "热键设置(&H)...",
+      "separator": "---",
+      "capture_screen": "屏幕截图(&C)",
+      "color_picker": "颜色选择器(&P)"
+    },
+    "help": {
+      "label": "帮助(&H)",
+      "user_guide": "用户指南(&U)",
+      "keyboard_shortcuts": "键盘快捷键(&K)",
+      "separator": "---",
+      "check_updates": "检查更新(&C)",
+      "report_bug": "报告错误(&B)",
+      "about": "关于(&A)",
+      "about_message": "CC-ImageOverlay v3.0.0\n\nRamune Soda Theme\nC# / WPF / .NET 10\n\n在屏幕上覆盖图像和备忘录的工具"
+    }
+  },
+  "dialogs": {
+    "file_dialogs": {
+      "open_image": {
+        "title": "选择图像文件",
+        "filter": "图像文件 (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.tiff);;所有文件 (*.*)"
+      },
+      "save_session": {
+        "title": "保存会话",
+        "filter": "会话文件 (*.session);;所有文件 (*.*)"
+      },
+      "load_session": {
+        "title": "加载会话",
+        "filter": "会话文件 (*.session);;所有文件 (*.*)"
+      }
+    },
+    "message_boxes": {
+      "confirmation": {
+        "exit_application": {
+          "title": "确认退出",
+          "message": "您确定要退出应用程序吗？",
+          "detail": "任何未保存的更改都将丢失。"
+        },
+        "delete_overlay": {
+          "title": "确认删除",
+          "message": "您确定要删除此覆盖层吗？",
+          "detail": "此操作无法撤销。"
+        }
+      },
+      "error": {
+        "image_load_failed": {
+          "title": "错误",
+          "message": "加载图像失败",
+          "detail": "文件：{file_path}\\n错误：{error_message}"
+        },
+        "config_load_failed": {
+          "title": "配置错误",
+          "message": "加载配置文件失败",
+          "detail": "将使用默认设置。"
+        },
+        "hotkey_registration_failed": {
+          "title": "热键错误",
+          "message": "注册热键失败",
+          "detail": "热键：{hotkey}\\n可能被其他应用程序使用。"
+        }
+      },
+      "information": {
+        "session_saved": {
+          "title": "保存完成",
+          "message": "会话保存成功",
+          "detail": "文件：{file_path}"
+        },
+        "session_loaded": {
+          "title": "加载完成",
+          "message": "会话加载成功",
+          "detail": "已恢复 {overlay_count} 个覆盖层。"
+        }
+      }
+    }
+  },
+  "main_window": {
+    "tabs": {
+      "image_mode": "图像模式",
+      "memo_mode": "备忘录模式"
+    },
+    "toolbar": {
+      "new_overlay": "新建覆盖层",
+      "open_image": "打开图像",
+      "save_session": "保存会话",
+      "settings": "设置"
+    },
+    "status_bar": {
+      "ready": "就绪",
+      "loading": "加载中...",
+      "saving": "保存中...",
+      "overlays_count": "{count} 个覆盖层",
+      "images_loaded": "已加载 {count} 个图像"
+    },
+    "panels": {
+      "overlay_list": {
+        "title": "覆盖层列表",
+        "no_overlays": "没有覆盖层",
+        "create_first": "创建您的第一个覆盖层"
+      },
+      "properties": {
+        "title": "属性",
+        "no_selection": "未选择覆盖层"
+      }
+    }
+  },
+  "ui_controls": {
+    "image_mode": {
+      "title": "图像模式",
+      "image_selection": {
+        "title": "图像选择",
+        "image_file_label": "图像文件：",
+        "placeholder": "请选择图像文件...",
+        "no_selection": "未选择图像",
+        "browse_button": "浏览图像"
+      },
+      "overlay_settings": {
+        "title": "覆盖层设置",
+        "monitor": "显示器：",
+        "opacity": "透明度：",
+        "position": "位置：",
+        "scale": "缩放：",
+        "display_button": "显示覆盖层"
+      },
+      "action_button": {
+        "show_overlay": "显示覆盖层",
+        "hide_overlay": "隐藏覆盖层",
+        "show_memo": "显示备忘录",
+        "hide_memo": "隐藏备忘录"
+      },
+      "preview": {
+        "title": "预览小部件",
+        "message": "此处将显示图像预览"
+      }
+    },
+    "memo_mode": {
+      "title": "备忘录模式",
+      "memo_text": {
+        "title": "备忘录文本",
+        "placeholder": "请输入备忘录内容..."
+      },
+      "memo_settings": {
+        "title": "备忘录设置",
+        "monitor": "显示器：",
+        "opacity": "透明度：",
+        "position": "位置：",
+        "scale": "缩放：",
+        "text_color": "文本颜色：",
+        "background_color": "背景颜色：",
+        "font_size": "大小：",
+        "font": "字体：",
+        "width": "宽度：",
+        "height": "高度：",
+        "display_button": "显示覆盖层"
+      },
+      "monitor_display": {
+        "primary": "主显示器",
+        "secondary": "副显示器",
+        "format": "显示器 {0} ({1}) - {2}x{3}"
+      },
+      "preview": {
+        "title": "预览小部件",
+        "message": "此处将显示备忘录预览",
+        "labels": {
+          "position_x": "位置: X: ",
+          "position_y": "  Y: ",
+          "size": "  |  大小: "
+        }
+      }
+    },
+    "common": {
+      "position_labels": {
+        "x": "X:",
+        "y": "Y:"
+      },
+      "file_dialogs": {
+        "select_image_title": "选择图像文件",
+        "image_files_filter": "图像文件 (*.png;*.jpg;*.jpeg;*.gif;*.bmp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp|所有文件 (*.*)|*.*"
+      },
+      "preview": {
+        "labels": {
+          "position_x": "位置: X: ",
+          "position_y": "  Y: ",
+          "size": "  |  大小: "
+        }
+      }
+    }
+  },
+  "overlay_controls": {
+    "general": {
+      "name": "名称：",
+      "image": "图像：",
+      "visible": "可见",
+      "locked": "锁定"
+    },
+    "position": {
+      "title": "位置",
+      "x": "X 坐标：",
+      "y": "Y 坐标：",
+      "monitor": "显示器：",
+      "reset": "重置"
+    },
+    "appearance": {
+      "title": "外观",
+      "size": "大小：",
+      "size_percent": "{value}%",
+      "alpha": "透明度：",
+      "alpha_percent": "{value}%",
+      "rotation": "旋转：",
+      "rotation_degrees": "{value}°"
+    },
+    "behavior": {
+      "title": "行为",
+      "always_on_top": "始终置顶",
+      "click_through": "点击穿透",
+      "auto_hide": "自动隐藏",
+      "fade_on_hover": "悬停时淡化"
+    },
+    "border": {
+      "title": "边框",
+      "visible": "可见",
+      "color": "颜色：",
+      "width": "宽度：",
+      "style": "样式："
+    }
+  },
+  "settings": {
+    "window_title": "设置",
+    "categories": {
+      "general": "常规",
+      "appearance": "外观",
+      "hotkeys": "热键",
+      "advanced": "高级设置"
+    },
+    "general": {
+      "language": {
+        "label": "语言：",
+        "japanese": "日本語",
+        "english": "English",
+        "chinese": "中文",
+        "korean": "한국어"
+      },
+      "startup": {
+        "title": "启动行为",
+        "show_splash": "显示启动画面",
+        "auto_start_overlays": "自动启动覆盖层",
+        "restore_session": "恢复上次会话"
+      }
+    },
+    "appearance": {
+      "theme": {
+        "label": "主题：",
+        "light": "浅色",
+        "dark": "深色",
+        "system": "跟随系统"
+      },
+      "ui": {
+        "title": "用户界面",
+        "animations_enabled": "启用动画",
+        "confirm_on_exit": "退出时确认"
+      }
+    },
+    "hotkeys": {
+      "global_enabled": "启用全局热键",
+      "actions": {
+        "toggle_overlay": "切换覆盖层：",
+        "show_overlay": "显示覆盖层：",
+        "hide_overlay": "隐藏覆盖层：",
+        "toggle_memo": "切换备忘录：",
+        "reset_position": "重置位置：",
+        "reload_config": "重新加载配置："
+      },
+      "buttons": {
+        "record": "记录",
+        "clear": "清除",
+        "reset": "重置"
+      }
+    }
+  },
+  "tooltips": {
+    "size_slider": "调整覆盖层大小",
+    "alpha_slider": "调整覆盖层透明度",
+    "position_reset": "将覆盖层重置到初始位置",
+    "always_on_top": "保持覆盖层始终置顶",
+    "click_through": "允许点击穿透覆盖层",
+    "lock_overlay": "锁定覆盖层位置和设置"
+  },
+  "notifications": {
+    "overlay_created": "新覆盖层已创建",
+    "overlay_deleted": "覆盖层已删除",
+    "image_loaded": "图像已加载：{filename}",
+    "settings_saved": "设置已保存",
+    "hotkey_registered": "热键已注册：{hotkey}",
+    "session_autosaved": "会话已自动保存"
+  },
+  "errors": {
+    "file_not_found": "文件未找到：{path}",
+    "permission_denied": "文件访问被拒绝：{path}",
+    "invalid_image_format": "不支持的图像格式：{format}",
+    "image_too_large": "图像文件过大（最大：{max_size}MB）",
+    "config_parse_error": "配置文件解析失败",
+    "hotkey_conflict": "热键冲突：{hotkey}",
+    "monitor_not_found": "未找到指定的显示器",
+    "overlay_limit_reached": "已达到覆盖层最大数量（最大：{max_count}）"
+  },
+  "error_messages": {
+    "mainwindow_init_error": "主窗口初始化错误",
+    "language_change_error": "语言更改错误",
+    "ui_text_update_error": "UI文本更新错误",
+    "ui_init_error": "UI初始化错误",
+    "config_load_error": "初始配置加载错误",
+    "default_color_init_error": "默认颜色初始化错误",
+    "image_import_error": "图像导入错误",
+    "signal_emit_error": "信号发射错误",
+    "mode_get_error": "模式获取错误",
+    "monitor_info_update_error": "显示器信息更新错误",
+    "position_slider_range_update_error": "位置滑块范围更新错误",
+    "monitor_list_update_error": "显示器列表更新错误",
+    "settings_apply_error": "设置应用错误",
+    "theme_change_error": "主题更改错误",
+    "theme_apply_error": "主题应用错误",
+    "config_file_update_error": "配置文件更新错误",
+    "overlay_list_update_error": "覆盖层列表更新错误",
+    "tab_change_error": "标签更改处理错误",
+    "overlay_direct_shutdown_error": "覆盖层直接关闭错误"
+  }
+}
