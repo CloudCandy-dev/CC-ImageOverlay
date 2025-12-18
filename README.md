@@ -14,15 +14,15 @@ CC-ImageOverlayは、デスクトップ上に画像やテキストメモを半�
 
 
 ## インストール方法
-[インストール先](https://github.com/CloudCandy-dev/CC-ImageOverlay/releases/tag/3.0.0)
-インストール版は「CC-ImageOverlay_Setup_version.exe」をダウンロードし、インストールしてください。
-ポータブル版は「portable.zip」をダウンロードし、解凍してください。
+- [インストール先](https://github.com/CloudCandy-dev/CC-ImageOverlay/releases/tag/3.0.0)
+- インストール版は「CC-ImageOverlay_Setup_version.exe」をダウンロードし、インストールしてください。
+- ポータブル版は「portable.zip」をダウンロードし、解凍してください。
 
 
 ## 免責事項
-- こちらのツールはオーバーレイアプリです、チート誤検出されずらいように設計していますが、検出される可能性があります。
-- 完全に自己責任で使用してください。
-- いかなる責任も負いません。
+こちらのツールはオーバーレイアプリです、チート誤検出されずらいように設計していますが、検出される可能性があります。
+完全に自己責任で使用してください。
+いかなる責任も負いません。
 
 ## 動作環境
 - Windows 10 / 11
